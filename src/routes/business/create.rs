@@ -1,13 +1,13 @@
 use axum::{Extension, Json, debug_handler};
-use axum::response::{IntoResponse, Response};
-use http::StatusCode;
+use axum::response::Response;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 use chrono::NaiveTime;
 use sea_orm::ActiveValue::Set;
 use crate::database::business;
 use rust_decimal::Decimal;
-use log::error;
+use log::{error, info};
+use crate::routes::utils::{default_created, internal_server_error};
 
 fn default_as_false() -> bool {
     false
@@ -29,7 +29,7 @@ pub struct Body {
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Json(Body {title, location, works_from, works_until, is_closed}): Json<Body>
-) -> Response {
+) -> Response{
     let new_business = business::ActiveModel {
         title: Set(title),
         location: Set(location),
@@ -39,19 +39,15 @@ pub async fn create(
         owner_id: Set(1),
         ..Default::default()
     };
-    let result = new_business.save(&database).await;
-    match result{
-        Ok(idk) => {
-            println!("{:?}", idk);
-            (
-                StatusCode::CREATED
-            ).into_response()
+
+    match new_business.save(&database).await {
+        Ok(instance) => {
+            info!("{:?}", instance);
+            default_created()
         },
         Err(error) => {
             error!("Unable to create {:?}. Original error was {}", 1, error);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR
-            ).into_response()
+            internal_server_error()
         }
     }
 }

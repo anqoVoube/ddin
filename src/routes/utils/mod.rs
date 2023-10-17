@@ -1,3 +1,5 @@
+pub mod media;
+
 use axum::Json;
 use serde::Serialize;
 use axum::response::{IntoResponse, Response};
@@ -56,6 +58,13 @@ pub fn bad_request(message: &str) -> Response{
                 message: message.to_string()
             }
         )
+    ).into_response()
+}
+
+
+pub fn not_found() -> Response{
+    (
+        StatusCode::NOT_FOUND
     ).into_response()
 }
 

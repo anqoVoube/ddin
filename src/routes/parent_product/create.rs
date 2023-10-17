@@ -1,17 +1,19 @@
 use axum::{Extension, Json, debug_handler};
-use axum::response::{IntoResponse, Response};
-use http::StatusCode;
+use axum::response::Response;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde::{Deserialize, Serialize};
-use chrono::NaiveTime;
 use sea_orm::ActiveValue::Set;
 use crate::database::parent_product;
-use rust_decimal::Decimal;
-use log::error;
+use std::fmt::Debug;
+
+use log::{error, info};
+use crate::routes::utils::{default_created, internal_server_error};
 
 fn default_as_false() -> bool {
     false
 }
+
+
 
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -32,20 +34,16 @@ pub async fn create(
         description: Set(description),
         ..Default::default()
     };
-    let result = new_parent_product.save(&database).await;
 
-    match result{
-        Ok(idk) => {
-            println!("{:?}", idk);
-            (
-                StatusCode::CREATED
-            ).into_response()
+
+    match new_parent_product.save(&database).await {
+        Ok(instance) => {
+            info!("{:?}", instance);
+            default_created()
         },
         Err(error) => {
             error!("Unable to create {:?}. Original error was {}", 1, error);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR
-            ).into_response()
+            internal_server_error()
         }
     }
 }
