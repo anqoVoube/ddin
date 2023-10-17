@@ -9,7 +9,7 @@ use crate::routes::utils::{bad_request, default_created, internal_server_error};
 
 use sea_orm::ColumnTrait;
 use crate::database::verification::Entity as Verification;
-use crate::database::verification::Model as VerificationModel;
+
 use rand::{Rng, thread_rng};
 use sea_orm::prelude::DateTimeWithTimeZone;
 

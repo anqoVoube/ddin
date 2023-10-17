@@ -4,7 +4,7 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
 use crate::database::parent_product;
-use std::fmt::Debug;
+
 
 use log::{error, info};
 use crate::routes::utils::{default_created, internal_server_error};
