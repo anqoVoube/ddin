@@ -9,19 +9,15 @@ use crate::database::product;
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::utils::{default_created, internal_server_error};
 
-fn default_as_false() -> bool {
-    false
-}
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Product {
-    parent_id: i64,
+    parent_id: i32,
     quantity: Option<u16>,
-    orig_price: i64,
-    price: i64,
+    orig_price: i32,
+    price: i32,
     produced_date: NaiveDate,
-    business_id: Option<i64>,
+    business_id: Option<i32>,
 }
 
 #[debug_handler]
@@ -36,7 +32,7 @@ pub async fn create(
             let new_product = product::ActiveModel {
                 price: Set(product.price),
                 expiration_date: Set(product.produced_date + chrono::Duration::days(parent_product.expiration_in_days as i64)),
-                business_id: Set(product.business_id.unwrap_or(2)),
+                business_id: Set(product.business_id.unwrap_or(1)),
                 quantity: Set(product.quantity.unwrap_or(1) as i32),
                 parent_product_id: Set(product.parent_id),
                 ..Default::default()

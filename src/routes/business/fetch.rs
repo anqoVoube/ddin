@@ -8,11 +8,6 @@ use crate::database::business::Entity as Business;
 use crate::database::business::Model as BusinessModel;
 use rust_decimal::Decimal;
 use log::{warn};
-
-fn default_as_false() -> bool {
-    false
-}
-
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
     title: String,
@@ -21,7 +16,7 @@ pub struct BusinessSchema {
     works_until: NaiveTime,
     #[serde(default="default_as_false")]
     is_closed: bool,
-    owner_id: i64
+    owner_id: i32
 }
 
 impl From<BusinessModel> for BusinessSchema {

@@ -12,11 +12,7 @@ use crate::database::verification::Entity as Verification;
 
 use rand::{Rng, thread_rng};
 use sea_orm::prelude::DateTimeWithTimeZone;
-
-fn default_as_false() -> bool {
-    false
-}
-
+use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct Body {
     first_name: String,
@@ -28,7 +24,8 @@ pub struct Body {
 #[debug_handler]
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
-    Json(Body{ first_name, last_name, phone_number}): Json<Body>
+    cookies: Cookies,
+    Json(Body{ first_name, last_name, phone_number}): Json<Body>,
 ) -> Response {
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
@@ -51,6 +48,8 @@ pub async fn create(
                     instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
                     match instance.update(&database).await{
                         Ok(_) => {
+                            // todo! create session
+                            // cookies.add(Cookie::new("hello_world", "hello_world").secure().http_only());
                             println!("verification created");
                             default_created()
                         },

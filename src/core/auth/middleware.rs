@@ -1,23 +1,33 @@
-use axum::{Extension, TypedHeader};
-use axum::headers::Cookie;
+use axum::Extension;
 use axum::http::{Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::Response;
-use sea_orm::DatabaseConnection;
+use sea_orm::{DatabaseConnection, EntityTrait};
+use crate::database::prelude::User;
+use crate::database::user::Model as UserModel;
+use crate::database::prelude::Business;
 
 
-pub async fn get_user_by_session<B>(
-    request: Request<B>,
+struct Auth{
+    user_id: i32,
+    business_id: i32,
+}
+pub async fn auth_getter<B>(
+    mut request: Request<B>,
     next: Next<B>,
-    TypedHeader(cookie): TypedHeader<Cookie>,
-    Extension(_): Extension<DatabaseConnection>
 ) -> Result<Response, StatusCode>{
-    dbg!(cookie);
+    // dbg!(cookie);
     // let headers = request.headers();
-    // let message = headers.get("message").ok_or(StatusCode::BAD_REQUEST)?;
+    // let message = headers.get("X-Business-Id").ok_or(StatusCode::BAD_REQUEST)?;
     // let message = message.to_str().map_err(|_error| StatusCode::BAD_REQUEST)?.to_owned();
-    // let extensions = request.extensions_mut();
-    //
-    // extensions.insert(Auth{user_id: 2});
+    let extensions = request.extensions_mut();
+    let user_id = 1;
+    let business_id = 1;
+    extensions.insert(
+        Auth{
+            user_id,
+            business_id
+        }
+    );
     Ok(next.run(request).await)
 }

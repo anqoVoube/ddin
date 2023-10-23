@@ -9,12 +9,6 @@ use crate::database::parent_product;
 use log::{error, info};
 use crate::routes::utils::{default_created, internal_server_error};
 
-fn default_as_false() -> bool {
-    false
-}
-
-
-
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Body {

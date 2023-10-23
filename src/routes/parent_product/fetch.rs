@@ -1,5 +1,7 @@
 use axum::{debug_handler, Extension, Json};
 use axum::extract::Path;
+use axum_extra::extract::cookie::Cookie;
+use axum_extra::extract::CookieJar;
 
 use http::StatusCode;
 use sea_orm::{Condition, DatabaseConnection, EntityTrait, QueryFilter};
@@ -12,7 +14,7 @@ use sea_orm::ColumnTrait;
 
 #[derive(Serialize, Debug)]
 pub struct ParentProductSchema {
-    id: i64,
+    id: i32,
     code: String,
     title: String,
     main_image: Option<String>
@@ -31,9 +33,9 @@ impl From<ParentProductModel> for ParentProductSchema {
 
 #[debug_handler]
 pub async fn get_object_by_code(
-    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>
+    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>, jar: CookieJar
 ) -> Result<Json<ParentProductSchema>, StatusCode> {
-
+    println!("REQUEST!");
     match get_object(&database, code).await{
         Ok(instance) => Ok(Json(instance.into())),
         Err(error_status_code) => Err(error_status_code)
@@ -55,7 +57,7 @@ pub async fn get_object(database: &DatabaseConnection, code: String) -> Result<P
     }
 }
 
-pub async fn get_object_by_id(database: &DatabaseConnection, id: i64) -> Result<ParentProductModel, StatusCode> {
+pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<ParentProductModel, StatusCode> {
     let parent_product = ParentProduct::find_by_id(id).one(database).await
         .map_err(|_error| {error!("Couldn't fetch parent_product with id: {}", id); StatusCode::INTERNAL_SERVER_ERROR})?;
 

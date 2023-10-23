@@ -4,12 +4,13 @@ mod parent_product;
 mod product;
 mod utils;
 
-use axum::{Router, body::Body, Extension};
+use axum::{Router, body::Body, Extension, middleware};
 
 
 use axum::routing::get;
 
 use sea_orm::DatabaseConnection;
+use crate::core::auth::middleware::auth_getter;
 use crate::routes::business::router::get_router as business_router;
 use crate::routes::user::router::get_router as user_router;
 use crate::routes::parent_product::router::get_router as parent_product_router;
@@ -26,14 +27,13 @@ pub fn v1_routes() -> Router{
 }
 
 
-
-
 pub fn create_routes(database: DatabaseConnection) -> Router<(), Body> {
     // Router with trailing slash deletion
 
     Router::new()
         .nest("/", v1_routes())
         .route("/media/*path", get(media_path))
+        // .route_layer(middleware::from_fn(business_getter))
+        .route_layer(middleware::from_fn(auth_getter))
         .layer(Extension(database))
-
 }

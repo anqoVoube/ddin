@@ -6,14 +6,14 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "parent_product")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i64,
+    pub id: i32,
     #[sea_orm(unique)]
     pub code: String,
     pub title: String,
     #[sea_orm(column_type = "Text")]
     pub description: String,
-    pub images: Vec<String>,
     pub main_image: Option<String>,
+    pub images: Vec<String>,
     pub expiration_in_days: i32,
 }
 

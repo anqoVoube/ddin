@@ -6,13 +6,13 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "business")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i64,
+    pub id: i32,
+    pub title: String,
     pub location: Vec<Decimal>,
     pub works_from: Time,
     pub works_until: Time,
     pub is_closed: bool,
-    pub owner_id: i64,
-    pub title: String,
+    pub owner_id: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

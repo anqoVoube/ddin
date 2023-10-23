@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
 use crate::database::product::Entity as Product;
 use crate::database::product;
-use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created};
+use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
 fn default_as_false() -> bool {
     false
@@ -14,7 +14,7 @@ fn default_as_false() -> bool {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductBody {
-    id: i64,
+    id: i32,
     quantity: i32,
 }
 
@@ -25,10 +25,11 @@ pub struct ProductsListBody {
 
 
 #[debug_handler]
-pub async fn delete(
+pub async fn sell(
     Extension(database): Extension<DatabaseConnection>,
     Json(products): Json<ProductsListBody>
 ) -> Response {
+    println!("{:#?}", products);
     for product_instance in products.products{
         match Product::find_by_id(product_instance.id).one(&database).await{
             Ok(Some(pear)) => {
@@ -59,5 +60,5 @@ pub async fn delete(
         };
     }
 
-    ().into_response()
+    default_ok()
 }
