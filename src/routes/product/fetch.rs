@@ -14,7 +14,7 @@ use crate::database::product;
 use crate::database::parent_product;
 
 use crate::database::parent_product::Entity as ParentProduct;
-use crate::routes::utils::default_ok;
+use crate::routes::utils::{default_ok, not_found};
 
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -45,6 +45,7 @@ pub struct ProductsSchema{
 pub async fn fetch_products(
     Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>
 ) -> Response {
+    println!("{}", code);
     let products = Product::find()
         .find_with_related(ParentProduct)
 
@@ -61,6 +62,10 @@ pub async fn fetch_products(
     let mut response_body = ProductsSchema{
         products: vec![]
     };
+
+    if products.len() == 0{
+        return not_found();
+    }
 
     for (product, vec_parent_product) in products{
         let parent_product = vec_parent_product.first().unwrap();

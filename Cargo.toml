@@ -16,6 +16,7 @@ include_dir = "0.7.3"
 log = "0.4.20"
 mime_guess = "2.0.4"
 rand = "0.8.5"
+redis = { verion = "0.23.3", features = ["tokio-comp"] }
 rust_decimal = "1.32.0"
 sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
 serde = { version = "1.0.188", features = ["derive"] }
@@ -23,3 +24,4 @@ serde_with = "3.3.0"
 tokio = { version = "1.32.0", features = ["full"] }
 tower-cookies = "0.9.0"
 tower-http = { version = "0.4.4", features = ["cors"] }
+
