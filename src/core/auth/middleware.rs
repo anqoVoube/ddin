@@ -29,7 +29,7 @@ pub async fn auth_getter<B>(
     // let _: () = locked_con.set("my_key", 42i32).await.unwrap();
     // let answer: i32 = locked_con.get("my_key").await.unwrap();
     // assert_eq!(locked_con.get("my_key").await, Ok(42i32));
-    println!("{:?}", answer);
+    // println!("{:?}", answer);
     // dbg!(cookie);
     // let headers = request.headers();
     // let message = headers.get("X-Business-Id").ok_or(StatusCode::BAD_REQUEST)?;
