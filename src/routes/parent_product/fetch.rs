@@ -33,7 +33,7 @@ impl From<ParentProductModel> for ParentProductSchema {
 
 #[debug_handler]
 pub async fn get_object_by_code(
-    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>, jar: CookieJar
+    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>
 ) -> Result<Json<ParentProductSchema>, StatusCode> {
     println!("REQUEST!");
     match get_object(&database, code).await{

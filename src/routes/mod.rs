@@ -13,6 +13,7 @@ use redis::aio::Connection;
 
 use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
+use tower_cookies::CookieManagerLayer;
 use crate::core::auth::middleware::auth_getter;
 use crate::routes::business::router::get_router as business_router;
 use crate::routes::user::router::get_router as user_router;
@@ -27,12 +28,14 @@ pub struct AppState {
 }
 
 
-pub fn v1_routes() -> Router{
+pub fn v1_routes(redis_connection: AppState) -> Router{
     Router::new()
         .nest("/business", business_router())
-        .nest("/user/", user_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
+        .route_layer(middleware::from_fn_with_state(redis_connection, auth_getter))
+        .nest("/user/", user_router())
+
 }
 
 
@@ -41,10 +44,10 @@ pub fn create_routes(database: DatabaseConnection, redis: Connection) -> Router<
     // let a = redis.clone();
     let redis_connection = AppState{redis: Arc::new(Mutex::new(redis))};
     Router::new()
-        .nest("/", v1_routes())
+        .nest("/", v1_routes(redis_connection))
         .route("/media/*path", get(media_path))
         // .route_layer(middleware::from_fn(business_getter))
-        .route_layer(middleware::from_fn_with_state(redis_connection, auth_getter))
         // .layer(Extension(redis))
         .layer(Extension(database))
+        .layer(CookieManagerLayer::new())
 }

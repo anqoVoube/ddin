@@ -19,8 +19,6 @@ const SESSION_KEY: &str = "session-key";
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct Body {
-    first_name: String,
-    last_name: String,
     phone_number: String
 }
 
@@ -33,66 +31,49 @@ pub struct VerificationData {
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     cookies: Cookies,
-    Json(Body{ first_name, last_name, phone_number}): Json<Body>,
+    Json(Body{ phone_number}): Json<Body>,
 ) -> Response {
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
     }
-    println!("{:?}", cookies);
     let mut condition = Condition::all();
     condition = condition.add(user::Column::PhoneNumber.eq(phone_number.clone()));
     match User::find().filter(condition).one(&database).await{
         Ok(Some(user)) => {
-            if user.is_verified {
-                return bad_request("Phone number is already registered");
+            if !user.is_verified {
+                return bad_request("Phone number is not registered");
             }
 
             let mut condition = Condition::all();
             condition = condition.add(verification::Column::UserId.eq(user.id));
             match Verification::find().filter(condition).one(&database).await{
                 Ok(Some(instance)) => {
-                    let mut instance: verification::ActiveModel = instance.into();
-                    instance.code = Set(generate_six_digit_number());
+                    if instance.expiration < DateTimeWithTimeZone::from(chrono::Utc::now()) {
+                        let mut instance: verification::ActiveModel = instance.into();
+                        instance.code = Set(generate_six_digit_number());
+                        instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
+                        match instance.update(&database).await{
+                            Ok(_) => {
+                                // todo! create session
 
-                    instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
-                    match instance.update(&database).await{
-                        Ok(_) => {
-                            // todo! create session
-
-                            println!("verification created");
-                            default_created()
-                        },
-                        Err(err) => {
-                            println!("{}", err);
-                            internal_server_error()
+                                println!("verification created");
+                                default_created()
+                            },
+                            Err(err) => {
+                                println!("{}", err);
+                                internal_server_error()
+                            }
                         }
+                    } else {
+                        (
+                            StatusCode::OK,
+                            Json(VerificationData{verification_id: instance.id})
+                        ).into_response()
                     }
+
                 },
-                Err(err) => {
-                    println!("{}", err);
-                    return internal_server_error();
-                },
-                _ => {
-                    println!("Verification instance not found for user_id: {}", user.id);
-                    return internal_server_error();
-                }
-            }
-        },
-        Err(err) => {
-            println!("{}", err);
-            return internal_server_error();
-        },
-        _ => {
-            let new_user = user::ActiveModel {
-                first_name: Set(first_name),
-                last_name: Set(last_name),
-                phone_number: Set(phone_number),
-                is_verified: Set(false),
-                ..Default::default()
-            };
-            match new_user.save(&database).await{
-                Ok(user) => {
-                    let user_id = user.id.unwrap();
+                Ok(None) => {
+                    let user_id = user.id;
                     println!("User created");
                     let new_verification = verification::ActiveModel {
                         user_id: Set(user_id),
@@ -118,9 +99,17 @@ pub async fn create(
                 },
                 Err(err) => {
                     println!("{}", err);
-                    internal_server_error()
-                }
+                    return internal_server_error();
+                },
+
             }
+        },
+        Err(err) => {
+            println!("{}", err);
+            return internal_server_error();
+        },
+        _ => {
+            bad_request("Phone number is not registered")
         }
     }
 }
