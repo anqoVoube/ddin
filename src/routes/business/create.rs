@@ -7,6 +7,7 @@ use sea_orm::ActiveValue::Set;
 use crate::database::business;
 use rust_decimal::Decimal;
 use log::{error, info};
+use crate::core::auth::middleware::Auth;
 use crate::routes::utils::{default_created, internal_server_error};
 
 fn default_as_false() -> bool {
@@ -28,6 +29,7 @@ pub struct Body {
 #[debug_handler]
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
+    Extension(auth): Extension<Auth>,
     Json(Body {title, location, works_from, works_until, is_closed}): Json<Body>
 ) -> Response{
     let new_business = business::ActiveModel {
@@ -36,7 +38,7 @@ pub async fn create(
         works_from: Set(works_from),
         works_until: Set(works_until),
         is_closed: Set(is_closed),
-        owner_id: Set(1),
+        owner_id: Set(auth.user_id),
         ..Default::default()
     };
 

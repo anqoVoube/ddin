@@ -20,8 +20,14 @@ const SESSION_KEY: &str = "session-key";
 #[derive(Copy, Clone)]
 pub struct Auth{
     pub user_id: i32,
-    pub business_id: i32,
+    pub business_id: Option<i32>
 }
+
+
+// Response::builder()
+//     .status(StatusCode::BAD_REQUEST)
+//     .body(Body::from("Missing x-business-id header"))
+//     .unwrap()
 
 pub async fn auth_getter<B>(
     State(state): State<AppState>,
@@ -30,30 +36,23 @@ pub async fn auth_getter<B>(
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{
     let headers = request.headers();
-    // let business_header_value = headers.get("x-business-id").ok_or_else(||
-    //     Response::builder()
-    //         .status(StatusCode::BAD_REQUEST)
-    //         .body(Body::from("Missing x-business-id header"))
-    //         .unwrap()
-    // )?;
-    //
-    // let business_id = business_header_value.to_str().map_err(|_error|
-    //     Response::builder()
-    //         .status(StatusCode::BAD_REQUEST)
-    //         .body(Body::from("Invalid x-business-id header"))
-    //         .unwrap()
-    // )?.to_owned().parse::<i32>().map_err(|_error|
-    //     Response::builder()
-    //         .status(StatusCode::BAD_REQUEST)
-    //         .body(Body::from("Invalid business id format"))
-    //         .unwrap()
-    // )?;
-    let business_id = 1;
-    let extensions = request.extensions_mut();
+    let business_id: Option<i32> = match headers.get("x-business-id"){
+        Some(business_header_value) => Ok(Some(business_header_value.to_str().map_err(|_error|
+            Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::from("Invalid x-business-id header"))
+                .unwrap()
+        )?.to_owned().parse::<i32>().map_err(|_error| Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .body(Body::from("Invalid x-business-id header"))
+            .unwrap())?)),
+        None => Ok(None)
+    }?;
 
+
+    let extensions = request.extensions_mut();
     let con: Arc<Mutex<Connection>> = state.redis;
     if let Some(session_id) = cookies.get(SESSION_KEY){
-
         let mut locked_con = con.lock().await; // Lock the Mutex
         let user_id: i32 = locked_con.get(session_id.value()).await.unwrap();
         extensions.insert(

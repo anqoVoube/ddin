@@ -3,9 +3,11 @@ mod user;
 mod parent_product;
 mod product;
 mod utils;
+mod ping;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
+use axum::response::IntoResponse;
 
 
 use axum::routing::get;
@@ -14,11 +16,13 @@ use redis::aio::Connection;
 use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
-use crate::core::auth::middleware::auth_getter;
+use crate::core::auth::middleware::{Auth, auth_getter};
 use crate::routes::business::router::get_router as business_router;
 use crate::routes::user::router::get_router as user_router;
 use crate::routes::parent_product::router::get_router as parent_product_router;
+use crate::routes::ping::ping;
 use crate::routes::product::router::get_router as product_router;
+use crate::routes::utils::{bad_request, default_ok};
 use crate::routes::utils::media::media_path;
 
 
@@ -30,6 +34,7 @@ pub struct AppState {
 
 pub fn v1_routes(redis_connection: AppState) -> Router{
     Router::new()
+        .route("/ping", get(ping))
         .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
