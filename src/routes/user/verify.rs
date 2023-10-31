@@ -1,6 +1,10 @@
+use std::sync::Arc;
 use axum::{debug_handler, Extension, Json};
+use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use log::error;
+use redis::aio::Connection;
+use redis::AsyncCommands;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::Deserialize;
 use tower_cookies::{Cookie, Cookies};
@@ -8,6 +12,8 @@ use crate::database::prelude::{User, Verification};
 use crate::database::user;
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
+use tokio::sync::Mutex;
+use crate::routes::AppState;
 
 const SESSION_KEY: &str = "session-key";
 
@@ -19,6 +25,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn verify(
+    Extension(state): Extension<AppState>,
     Extension(database): Extension<DatabaseConnection>,
     cookies: Cookies,
     Json(Body{verification_id, verification_code}): Json<Body>
@@ -33,6 +40,9 @@ pub async fn verify(
                         user.is_verified = Set(true);
                         match user.update(&database).await {
                             Ok(user) => {
+                                let con: Arc<Mutex<Connection>> = state.redis;
+                                let mut locked_con = con.lock().await; // Lock the Mutex
+                                let _: () = locked_con.set(user.id, user.id).await.unwrap();
                                 let mut cookie = Cookie::new(SESSION_KEY, user.id.to_string());
                                 cookie.set_secure(true);
                                 cookie.set_http_only(true);

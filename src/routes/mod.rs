@@ -36,6 +36,7 @@ pub fn v1_routes(redis_connection: AppState) -> Router{
         .route_layer(middleware::from_fn_with_state(redis_connection, auth_getter))
         .nest("/user/", user_router())
 
+
 }
 
 
@@ -44,10 +45,11 @@ pub fn create_routes(database: DatabaseConnection, redis: Connection) -> Router<
     // let a = redis.clone();
     let redis_connection = AppState{redis: Arc::new(Mutex::new(redis))};
     Router::new()
-        .nest("/", v1_routes(redis_connection))
+        .nest("/", v1_routes(redis_connection.clone()))
         .route("/media/*path", get(media_path))
         // .route_layer(middleware::from_fn(business_getter))
         // .layer(Extension(redis))
+        .layer(Extension(redis_connection))
         .layer(Extension(database))
         .layer(CookieManagerLayer::new())
 }

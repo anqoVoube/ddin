@@ -16,9 +16,11 @@ use crate::database::prelude::Business;
 use crate::routes::AppState;
 
 const SESSION_KEY: &str = "session-key";
-struct Auth{
-    user_id: i32,
-    business_id: i32,
+
+#[derive(Copy, Clone)]
+pub struct Auth{
+    pub user_id: i32,
+    pub business_id: i32,
 }
 
 pub async fn auth_getter<B>(
@@ -27,9 +29,7 @@ pub async fn auth_getter<B>(
     mut request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{
-    println!("{:?}", cookies);
     let headers = request.headers();
-    println!("{:?}", headers);
     // let business_header_value = headers.get("x-business-id").ok_or_else(||
     //     Response::builder()
     //         .status(StatusCode::BAD_REQUEST)
@@ -52,8 +52,8 @@ pub async fn auth_getter<B>(
     let extensions = request.extensions_mut();
 
     let con: Arc<Mutex<Connection>> = state.redis;
-    println!("{:?}", cookies);
     if let Some(session_id) = cookies.get(SESSION_KEY){
+
         let mut locked_con = con.lock().await; // Lock the Mutex
         let user_id: i32 = locked_con.get(session_id.value()).await.unwrap();
         extensions.insert(
