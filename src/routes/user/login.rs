@@ -14,6 +14,7 @@ use crate::database::verification::Entity as Verification;
 use rand::{Rng, thread_rng};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
+use crate::routes::AppConnections;
 
 const SESSION_KEY: &str = "session-key";
 
@@ -29,7 +30,7 @@ pub struct VerificationData {
 
 #[debug_handler]
 pub async fn create(
-    Extension(database): Extension<DatabaseConnection>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>,
     cookies: Cookies,
     Json(Body{ phone_number}): Json<Body>,
 ) -> Response {

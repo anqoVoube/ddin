@@ -19,6 +19,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::product::Entity")]
     Product,
+    #[sea_orm(has_many = "super::rent::Entity")]
+    Rent,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::OwnerId",
@@ -27,6 +29,8 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     User,
+    #[sea_orm(has_many = "super::weight_item::Entity")]
+    WeightItem,
 }
 
 impl Related<super::product::Entity> for Entity {
@@ -35,9 +39,21 @@ impl Related<super::product::Entity> for Entity {
     }
 }
 
+impl Related<super::rent::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Rent.def()
+    }
+}
+
 impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
+    }
+}
+
+impl Related<super::weight_item::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::WeightItem.def()
     }
 }
 

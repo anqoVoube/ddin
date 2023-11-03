@@ -8,6 +8,8 @@ use crate::database::business::Entity as Business;
 use crate::database::business::Model as BusinessModel;
 use rust_decimal::Decimal;
 use log::{warn};
+use crate::routes::AppConnections;
+
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
     title: String,
@@ -33,7 +35,7 @@ impl From<BusinessModel> for BusinessSchema {
 }
 
 pub async fn list(
-    Extension(database): Extension<DatabaseConnection>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>,
 ) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
 
     let businesses = Business::find()
@@ -48,7 +50,7 @@ pub async fn list(
 }
 
 pub async fn get_object(
-    Extension(database): Extension<DatabaseConnection>, Path(business_id): Path<i32>
+    Extension(AppConnections{redis, database}): Extension<AppConnections>, Path(business_id): Path<i32>
 ) -> Result<Json<BusinessSchema>, StatusCode> {
 
     let business = Business::find_by_id(business_id).one(&database).await

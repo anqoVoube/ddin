@@ -11,6 +11,7 @@ use crate::database::parent_product::Model as ParentProductModel;
 use log::{error, info, warn};
 use crate::database::parent_product;
 use sea_orm::ColumnTrait;
+use crate::routes::AppConnections;
 
 #[derive(Serialize, Debug)]
 pub struct ParentProductSchema {
@@ -33,7 +34,7 @@ impl From<ParentProductModel> for ParentProductSchema {
 
 #[debug_handler]
 pub async fn get_object_by_code(
-    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>
+    Extension(AppConnections{redis, database}): Extension<AppConnections>, Path(code): Path<String>
 ) -> Result<Json<ParentProductSchema>, StatusCode> {
     println!("REQUEST!");
     match get_object(&database, code).await{

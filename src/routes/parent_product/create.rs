@@ -7,6 +7,7 @@ use crate::database::parent_product;
 
 
 use log::{error, info};
+use crate::routes::AppConnections;
 use crate::routes::utils::{default_created, internal_server_error};
 
 
@@ -19,7 +20,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn create(
-    Extension(database): Extension<DatabaseConnection>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>,
     Json(Body { code, title, description }): Json<Body>
 ) -> Response {
     let new_parent_product = parent_product::ActiveModel {

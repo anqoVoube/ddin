@@ -10,11 +10,13 @@ use serde::{Deserialize, Serialize};
 use crate::database::product::Entity as Product;
 
 use sea_orm::ColumnTrait;
+use crate::core::auth::middleware::Auth;
 use crate::database::product;
 use crate::database::parent_product;
 
 use crate::database::parent_product::Entity as ParentProduct;
-use crate::routes::utils::{default_ok, not_found};
+use crate::routes::AppConnections;
+use crate::routes::utils::{default_missing_header, default_ok, not_found};
 
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -43,15 +45,15 @@ pub struct ProductsSchema{
 
 #[debug_handler] 
 pub async fn fetch_products(
-    Extension(database): Extension<DatabaseConnection>, Path(code): Path<String>
-) -> Response {
-    println!("{}", code);
+    Extension(auth): Extension<Auth>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>, Path(code): Path<String>
+) -> Result<Response, Response> {
     let products = Product::find()
         .find_with_related(ParentProduct)
 
         .filter(
             Condition::all()
-                .add(product::Column::BusinessId.eq(1))
+                .add(product::Column::BusinessId.eq(auth.business_id))
                 .add(parent_product::Column::Code.eq(code))
         )
 
@@ -64,7 +66,7 @@ pub async fn fetch_products(
     };
 
     if products.len() == 0{
-        return not_found();
+        return Err(not_found());
     }
 
     for (product, vec_parent_product) in products{
@@ -82,8 +84,10 @@ pub async fn fetch_products(
 
     }
     println!("{:#?}", response_body);
-    (
+    Ok(
+        (
         StatusCode::OK,
         Json(response_body)
-    ).into_response()
+        ).into_response()
+    )
 }

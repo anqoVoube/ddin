@@ -1,5 +1,6 @@
 pub mod media;
 
+use axum::body::Body;
 use axum::Json;
 use serde::Serialize;
 use axum::response::{IntoResponse, Response};
@@ -61,6 +62,12 @@ pub fn bad_request(message: &str) -> Response{
     ).into_response()
 }
 
+pub fn default_missing_header() -> Response{
+    (
+        StatusCode::NOT_ACCEPTABLE
+    ).into_response()
+}
+
 
 pub fn not_found() -> Response{
     (
@@ -73,4 +80,11 @@ pub fn internal_server_error() -> Response{
     (
         StatusCode::INTERNAL_SERVER_ERROR
     ).into_response()
+}
+
+pub fn response_builder(status: StatusCode, body_text: &str) -> Response<Body>{
+    Response::builder()
+        .status(status)
+        .body(Body::from(body_text.to_owned()))
+        .unwrap()
 }

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
 use crate::database::product::Entity as Product;
 use crate::database::product;
+use crate::routes::AppConnections;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
 fn default_as_false() -> bool {
@@ -26,7 +27,7 @@ pub struct ProductsListBody {
 
 #[debug_handler]
 pub async fn sell(
-    Extension(database): Extension<DatabaseConnection>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>,
     Json(products): Json<ProductsListBody>
 ) -> Response {
     println!("{:#?}", products);

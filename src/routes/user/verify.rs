@@ -13,7 +13,7 @@ use crate::database::user;
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
 use tokio::sync::Mutex;
-use crate::routes::AppState;
+use crate::routes::AppConnections;
 
 const SESSION_KEY: &str = "session-key";
 
@@ -25,8 +25,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn verify(
-    Extension(state): Extension<AppState>,
-    Extension(database): Extension<DatabaseConnection>,
+    Extension(AppConnections{redis, database}): Extension<AppConnections>,
     cookies: Cookies,
     Json(Body{verification_id, verification_code}): Json<Body>
 ) -> Response {
@@ -40,9 +39,8 @@ pub async fn verify(
                         user.is_verified = Set(true);
                         match user.update(&database).await {
                             Ok(user) => {
-                                let con: Arc<Mutex<Connection>> = state.redis;
-                                let mut locked_con = con.lock().await; // Lock the Mutex
-                                let _: () = locked_con.set(user.id, user.id).await.unwrap();
+                                let mut redis_conn = redis.get().await.expect("Failed to get Redis connection");
+                                let _: () = redis_conn.set(user.id, user.id).await.unwrap();
                                 let mut cookie = Cookie::new(SESSION_KEY, user.id.to_string());
                                 cookie.set_secure(true);
                                 cookie.set_http_only(true);
