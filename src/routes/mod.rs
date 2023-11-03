@@ -6,7 +6,7 @@ pub mod utils;
 mod ping;
 
 mod weight_item;
-mod search;
+mod find;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
@@ -25,8 +25,8 @@ use crate::routes::business::router::get_router as business_router;
 use crate::routes::user::router::get_router as user_router;
 use crate::routes::parent_product::router::get_router as parent_product_router;
 use crate::routes::ping::ping;
+use crate::routes::find::search::find_by_name;
 use crate::routes::product::router::get_router as product_router;
-use crate::routes::utils::{bad_request, default_ok};
 use crate::routes::utils::media::media_path;
 
 
@@ -41,6 +41,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
     Router::new()
         .route("/ping", get(ping))
+        .route("/find", get(find_by_name))
         .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())

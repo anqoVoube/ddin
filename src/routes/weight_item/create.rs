@@ -3,7 +3,7 @@ use axum::response::{Response, IntoResponse};
 use chrono::NaiveDate;
 use http::StatusCode;
 use log::{error, info};
-use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::Serialize;
 use crate::routes::{AppConnections};
 use crate::database::parent_weight_item::Model as ParentWeightItemModel;
@@ -19,7 +19,7 @@ pub struct Body {
     parent_weight_item_id: i32,
     price: i32,
     orig_price: i32,
-    kg_weight: f32,
+    kg_weight: f64,
     produced_date: Option<NaiveDate>
 }
 
@@ -44,7 +44,10 @@ pub async fn create(
     println!("{} {:?} {} {} {:?}", parent_weight_item_id, kg_weight, orig_price, price, produced_date);
     match get_object_by_id(&connections.database, parent_weight_item_id).await{
         Ok(parent_weight_item) => {
-            let expiration_date = produced_date + chrono::Duration::days(parent_weight_item.expiration_in_days as i64);
+            let mut expiration_date = None;
+             if let Some(produced_date) = produced_date{
+                expiration_date = Some(produced_date + chrono::Duration::days(parent_weight_item.expiration_in_days as i64));
+            }
             println!("{:?}", parent_weight_item);
             match WeightItem::find()
                 .filter(
@@ -57,7 +60,7 @@ pub async fn create(
                 .await.unwrap()
             {
                 Some(item) => {
-                    let adding_weight = item.clone().weight;
+                    let adding_weight = item.clone().kg_weight;
                     let mut item: weight_item::ActiveModel = item.into();
                     item.kg_weight = Set(adding_weight + kg_weight);
                     match item.update(&connections.database).await {
@@ -73,7 +76,7 @@ pub async fn create(
                 None => {
                     let new_product = weight_item::ActiveModel {
                         price: Set(price),
-                        expiration_date: Set(produced_date + chrono::Duration::days(parent_weight_item.expiration_in_days as i64)),
+                        expiration_date: Set(expiration_date),
                         business_id: Set(auth.business_id),
                         kg_weight: Set(kg_weight),
                         parent_weight_item_id: Set(parent_weight_item_id),
@@ -94,7 +97,7 @@ pub async fn create(
             }
         },
         Err(error) => {
-            error!("Couldn't fetch parent_weight_item with id: {}. Original error is: {}", parent_id, error);
+            error!("Couldn't fetch parent_weight_item with id. Original error is: {}", error);
             internal_server_error()
         }
     }

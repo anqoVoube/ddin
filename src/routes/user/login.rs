@@ -29,7 +29,7 @@ pub struct VerificationData {
 }
 
 #[debug_handler]
-pub async fn create(
+pub async fn login(
     Extension(AppConnections{redis, database}): Extension<AppConnections>,
     cookies: Cookies,
     Json(Body{ phone_number}): Json<Body>,
@@ -54,11 +54,14 @@ pub async fn create(
                         instance.code = Set(generate_six_digit_number());
                         instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
                         match instance.update(&database).await{
-                            Ok(_) => {
+                            Ok(updated_instance) => {
                                 // todo! create session
-
+                                println!("updated");
                                 println!("verification created");
-                                default_created()
+                                (
+                                    StatusCode::CREATED,
+                                    Json(VerificationData{verification_id: updated_instance.id})
+                                ).into_response()
                             },
                             Err(err) => {
                                 println!("{}", err);

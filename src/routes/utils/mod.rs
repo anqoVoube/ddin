@@ -1,4 +1,5 @@
 pub mod media;
+pub mod condition;
 
 use axum::body::Body;
 use axum::Json;

@@ -3,17 +3,21 @@ use axum::{Extension, Json};
 use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
 use chrono::NaiveDate;
-use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait};
+use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Serialize_repr, Deserialize_repr};
-use tower_http::classify::ServerErrorsFailureClass::StatusCode;
+use http::StatusCode;
+use sea_orm::sea_query::{Expr, Func};
 use crate::core::auth::middleware::Auth;
 use crate::database::prelude::Product;
 use crate::database::prelude::ParentProduct;
 use crate::database::{parent_product, parent_weight_item, product, weight_item};
 use crate::database::prelude::WeightItem;
-use crate::database::weight_item::Relation::ParentWeightItem;
+use sea_orm::entity::*;
+use sea_orm::query::*;
+use crate::database::prelude::ParentWeightItem;
 use crate::routes::AppConnections;
+use crate::routes::utils::condition::starts_with;
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
@@ -22,7 +26,7 @@ pub enum Types{
     WeightItem = 2,
 }
 #[derive(Deserialize, Serialize)]
-struct Search {
+pub struct Search {
     search: String,
     r#type: Types,
 }
@@ -34,7 +38,7 @@ pub struct WeightItemSchema{
     title: String,
     price: i32,
     main_image: Option<String>,
-    max_kg_weight: f32,
+    max_kg_weight: f64,
     expiration_date: Option<NaiveDate>
 }
 
@@ -50,7 +54,7 @@ pub async fn find_by_name(
 ) -> Response{
         match query.r#type{
             Types::Product => {
-                let data = find_product(query.search, auth.business_id, &connections.database);
+                let data = find_product(query.search, auth.business_id, &connections.database).await;
                 ().into_response()
             },
             Types::WeightItem => {
@@ -58,7 +62,7 @@ pub async fn find_by_name(
                     query.search,
                     auth.business_id,
                     &connections.database
-                );
+                ).await;
                 (
                     StatusCode::OK,
                     Json(data)
@@ -88,8 +92,9 @@ pub async fn find_weight_item(
     business_id: i32,
     database: &DatabaseConnection
 ) -> WeightItemsSchema{
+    let like = format!("{}%", search.to_lowercase());
     let weight_items = WeightItem::find()
-        .find_with_related(ParentProduct)
+        .find_with_related(ParentWeightItem)
 
         .filter(
 
@@ -97,16 +102,15 @@ pub async fn find_weight_item(
                 .add(weight_item::Column::BusinessId.eq(business_id))
                 .add(
                     Condition::any()
-                        .add(parent_weight_item::Column::Title.starts_with(search.clone()))
-                        .add(parent_weight_item::Column::TitleUz.starts_with(search.clone()))
-                        .add(parent_weight_item::Column::TitleRu.starts_with(search.clone()))
+                        // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
+                        .add(starts_with(&search, parent_weight_item::Column::Title, false))
+                        .add(starts_with(&search, parent_weight_item::Column::TitleUz, false))
+                        .add(starts_with(&search, parent_weight_item::Column::TitleRu, false))
                 )
         )
-        .distinct()
         .all(database)
 
         .await.unwrap();
-
     let mut response_body = WeightItemsSchema{
         weight_items: vec![]
     };
@@ -119,7 +123,7 @@ pub async fn find_weight_item(
             price: weight_item.price,
             max_kg_weight: weight_item.kg_weight,
             expiration_date: weight_item.expiration_date,
-            main_image: weight_item.main_image.clone()
+            main_image: parent_weight_item.main_image.clone()
         };
 
         response_body.weight_items.push(weight_item_body);
