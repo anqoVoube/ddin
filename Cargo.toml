@@ -22,6 +22,7 @@ redis = { verion = "0.23.3", features = ["tokio-comp"] }
 rust_decimal = "1.32.0"
 sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
 serde = { version = "1.0.188", features = ["derive"] }
+serde_repr = "0.1.17"
 serde_with = "3.3.0"
 tokio = { version = "1.32.0", features = ["full"] }
 tower-cookies = "0.9.0"

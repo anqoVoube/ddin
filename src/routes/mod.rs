@@ -6,6 +6,7 @@ pub mod utils;
 mod ping;
 
 mod weight_item;
+mod search;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};

@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub price: i32,
-    pub kg_weight: i32,
+    pub kg_weight: f32,
     pub parent_weight_item_id: i32,
     pub expiration_date: Date,
     pub business_id: i32,
