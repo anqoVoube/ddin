@@ -17,6 +17,8 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_many = "super::parent_weight_item::Entity")]
+    ParentWeightItem,
     #[sea_orm(has_many = "super::product::Entity")]
     Product,
     #[sea_orm(has_many = "super::rent::Entity")]
@@ -31,6 +33,12 @@ pub enum Relation {
     User,
     #[sea_orm(has_many = "super::weight_item::Entity")]
     WeightItem,
+}
+
+impl Related<super::parent_weight_item::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ParentWeightItem.def()
+    }
 }
 
 impl Related<super::product::Entity> for Entity {

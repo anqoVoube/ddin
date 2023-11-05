@@ -47,11 +47,12 @@ pub struct WeightItemsSchema{
     weight_items: Vec<WeightItemSchema>
 }
 
-pub async fn find_by_name(
+pub async fn search(
     Extension(auth): Extension<Auth>,
     Extension(connections): Extension<AppConnections>,
     Query(query): Query<Search>
 ) -> Response{
+        println!("{} {:?}", query.search, query.r#type);
         match query.r#type{
             Types::Product => {
                 let data = find_product(query.search, auth.business_id, &connections.database).await;
@@ -104,8 +105,6 @@ pub async fn find_weight_item(
                     Condition::any()
                         // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
                         .add(starts_with(&search, parent_weight_item::Column::Title, false))
-                        .add(starts_with(&search, parent_weight_item::Column::TitleUz, false))
-                        .add(starts_with(&search, parent_weight_item::Column::TitleRu, false))
                 )
         )
         .all(database)
@@ -128,7 +127,7 @@ pub async fn find_weight_item(
 
         response_body.weight_items.push(weight_item_body);
     }
-
+    println!("{:?}", response_body);
     response_body
 }
 
