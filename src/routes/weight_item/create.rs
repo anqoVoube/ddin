@@ -1,10 +1,10 @@
-use axum::{Extension, Json};
+use axum::{debug_handler, Extension, Json};
 use axum::response::{Response, IntoResponse};
 use chrono::NaiveDate;
 use http::StatusCode;
 use log::{error, info};
 use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::routes::{AppConnections};
 use crate::database::parent_weight_item::Model as ParentWeightItemModel;
 use crate::database::prelude::{ParentWeightItem, WeightItem};
@@ -14,9 +14,9 @@ use crate::database::weight_item;
 use sea_orm::ActiveValue::Set;
 use crate::routes::utils::{default_created, internal_server_error};
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize)]
 pub struct Body {
-    parent_weight_item_id: i32,
+    parent_id: i32,
     price: i32,
     orig_price: i32,
     kg_weight: f64,
@@ -36,13 +36,14 @@ pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<
     }
 }
 
+#[debug_handler]
 pub async fn create(
     Extension(connections): Extension<AppConnections>,
     Extension(auth): Extension<Auth>,
-    Json(Body {parent_weight_item_id, price, orig_price, kg_weight, produced_date}): Json<Body>
+    Json(Body {parent_id, price, orig_price, kg_weight, produced_date}): Json<Body>
 ) -> Response {
-    println!("{} {:?} {} {} {:?}", parent_weight_item_id, kg_weight, orig_price, price, produced_date);
-    match get_object_by_id(&connections.database, parent_weight_item_id).await{
+    println!("{} {:?} {} {} {:?}", parent_id, kg_weight, orig_price, price, produced_date);
+    match get_object_by_id(&connections.database, parent_id).await{
         Ok(parent_weight_item) => {
             let mut expiration_date = None;
              if let Some(produced_date) = produced_date{
@@ -79,7 +80,7 @@ pub async fn create(
                         expiration_date: Set(expiration_date),
                         business_id: Set(auth.business_id),
                         kg_weight: Set(kg_weight),
-                        parent_weight_item_id: Set(parent_weight_item_id),
+                        parent_weight_item_id: Set(parent_id),
                         ..Default::default()
                     };
 
@@ -98,6 +99,7 @@ pub async fn create(
         },
         Err(error) => {
             error!("Couldn't fetch parent_weight_item with id. Original error is: {}", error);
+            println!("104");
             internal_server_error()
         }
     }
