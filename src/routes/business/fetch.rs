@@ -1,7 +1,7 @@
 use axum::{Extension, Json};
 use axum::extract::Path;
 use http::StatusCode;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{Database, DatabaseConnection, EntityTrait};
 use serde::Serialize;
 use chrono::NaiveTime;
 use crate::database::business::Entity as Business;
@@ -35,7 +35,7 @@ impl From<BusinessModel> for BusinessSchema {
 }
 
 pub async fn list(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
 ) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
 
     let businesses = Business::find()
@@ -50,7 +50,7 @@ pub async fn list(
 }
 
 pub async fn get_object(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>, Path(business_id): Path<i32>
+    Extension(database): Extension<DatabaseConnection>, Path(business_id): Path<i32>
 ) -> Result<Json<BusinessSchema>, StatusCode> {
 
     let business = Business::find_by_id(business_id).one(&database).await

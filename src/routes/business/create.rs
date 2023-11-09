@@ -9,6 +9,7 @@ use crate::database::business;
 use rust_decimal::Decimal;
 use log::{error, info};
 use crate::core::auth::middleware::Auth;
+use crate::RedisPool;
 use crate::routes::AppConnections;
 use crate::routes::utils::{internal_server_error};
 
@@ -28,7 +29,6 @@ pub struct Body {
 }
 
 
-
 #[derive(Serialize, Deserialize)]
 pub struct ResponseBody{
     business_id: i32
@@ -37,7 +37,7 @@ pub struct ResponseBody{
 
 #[debug_handler]
 pub async fn create(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Json(Body {title, location, works_from, works_until, is_closed, phone_number}): Json<Body>
 ) -> Response{

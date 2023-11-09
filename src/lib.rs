@@ -16,7 +16,7 @@ pub async fn init_db(database_uri: &str) -> DatabaseConnection{
     opt.max_connections(100)
         .min_connections(5);
 
-    Database::connect(opt).await.unwrap()
+    Database::connect(opt).await.expect("Failed to create Postgres connection")
 }
 
 pub async fn init_redis(redis_uri: &str) -> RedisPool {
@@ -29,16 +29,65 @@ pub async fn init_redis(redis_uri: &str) -> RedisPool {
 
 
 pub async fn init_scylla(scylla_url: &str) -> Session{
-    match SessionBuilder::new()
-        .known_node(scylla_url)
-        .build()
-        .await{
-            Ok(session) => session,
-            Err(err) => {
-                error!("Failed to initialize scylaldb");
-                panic!("Failed to initialize");
-            }
-        }
+   let session = SessionBuilder::new()
+       .known_node(scylla_url)
+       .build()
+       .await
+       .expect("Failed to create ScyllaDB session");
+
+    // Keyspace and Table creation
+    session
+        .query(
+            "CREATE KEYSPACE IF NOT EXISTS statistics WITH REPLICATION = \
+            {'class' : 'NetworkTopologyStrategy', 'replication_factor' : 1}",
+            &[],
+        )
+        .await
+        .expect("Failed to create keyspace");
+
+    session
+        .query(
+            "CREATE TABLE IF NOT EXISTS statistics.products (
+                parent_id int,
+                quantity int,
+                price int,
+                business_id int,
+                date timestamp,
+                PRIMARY KEY ((parent_id, business_id), date)
+            );",
+            &[],
+        )
+        .await
+        .expect("Failed to create table products");
+    session
+        .query(
+            "CREATE TABLE IF NOT EXISTS statistics.weight_items (
+                parent_id int,
+                kg_weight float,
+                price int,
+                business_id int,
+                date timestamp,
+                PRIMARY KEY ((parent_id, business_id), date)
+            );",
+            &[],
+        )
+        .await
+        .expect("Failed to create table weight-items");
+    session
+        .query(
+            "CREATE TABLE IF NOT EXISTS statistics.no_code_products (
+                parent_id int,
+                quantity int,
+                price int,
+                business_id int,
+                date timestamp,
+                PRIMARY KEY ((parent_id, business_id), date)
+            );",
+            &[],
+        )
+        .await
+        .expect("Failed to create table no-code-products");
+    session
 }
 
 pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, running_port: &str){
@@ -50,5 +99,5 @@ pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, running_
     axum::Server::bind(&url.parse().unwrap())
         .serve(app.into_make_service())
         .await
-        .unwrap();
+        .expect("Failed to run axum server");
 }

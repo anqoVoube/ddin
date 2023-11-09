@@ -45,7 +45,8 @@ pub struct ProductsSchema{
 #[debug_handler] 
 pub async fn fetch_products(
     Extension(auth): Extension<Auth>,
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>, Path(code): Path<String>
+    Extension(database): Extension<DatabaseConnection>,
+    Path(code): Path<String>
 ) -> Result<Response, Response> {
     let products = Product::find()
         .find_with_related(ParentProduct)

@@ -11,6 +11,7 @@ pub mod rent;
 mod sell;
 mod parent_no_code_product;
 mod no_code_product;
+mod statistics;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
@@ -25,7 +26,6 @@ use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
 use crate::core::auth::middleware::{Auth, auth_getter};
-use crate::database::prelude::Session;
 use crate::RedisPool;
 use crate::routes::business::create::create;
 use crate::routes::business::router::get_router as business_router;
@@ -44,7 +44,6 @@ use crate::routes::sell::sell;
 pub struct AppConnections {
     pub redis: RedisPool,
     pub database: DatabaseConnection,
-    pub scylla: Arc<ScyllaDBSession>
 }
 
 pub struct StatisticsConnections {
@@ -63,16 +62,19 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
         .nest("/no-code-product", no_code_product_router())
+        .nest("/statistics", no_code_product_router())
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
         .nest("/user/", user_router())
 }
 
 
 pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: ScyllaDBSession) -> Router<(), Body> {
-    let connections = AppConnections{redis, database, scylla: Arc::new(scylla)};
+    let connections = AppConnections{redis: redis.clone(), database: database.clone()};
     Router::new()
         .nest("/", v1_routes(connections.clone()))
         .route("/media/*path", get(media_path))
-        .layer(Extension(connections))
+        .layer(Extension(redis))
+        .layer(Extension(database))
+        .layer(Extension(Arc::new(scylla)))
         .layer(CookieManagerLayer::new())
 }

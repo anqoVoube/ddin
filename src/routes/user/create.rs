@@ -32,7 +32,7 @@ pub struct VerificationData {
 
 #[debug_handler]
 pub async fn create(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     cookies: Cookies,
     Json(Body{ first_name, last_name, phone_number}): Json<Body>,
 ) -> Response {

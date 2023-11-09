@@ -44,7 +44,7 @@ pub struct SellBody {
 
 #[debug_handler]
 pub async fn sell(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);

@@ -10,7 +10,7 @@ pub struct Body {
 }
 
 pub async fn create(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Json(body): Json<Body>
 ) -> Response{
     ().into_response()

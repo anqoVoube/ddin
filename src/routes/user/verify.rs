@@ -13,6 +13,7 @@ use crate::database::user;
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
 use tokio::sync::Mutex;
+use crate::RedisPool;
 use crate::routes::AppConnections;
 
 const SESSION_KEY: &str = "session-key";
@@ -25,7 +26,8 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn verify(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(redis): Extension<RedisPool>,
+    Extension(database): Extension<DatabaseConnection>,
     cookies: Cookies,
     Json(Body{verification_id, verification_code}): Json<Body>
 ) -> Response {

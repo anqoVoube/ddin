@@ -25,7 +25,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn create(
-    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Json(Body {parent_id, quantity, orig_price, price, produced_date}): Json<Body>
 ) -> Result<Response, Response> {
