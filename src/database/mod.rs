@@ -13,6 +13,8 @@ pub mod django_admin_log;
 pub mod django_content_type;
 pub mod django_migrations;
 pub mod django_session;
+pub mod no_code_product;
+pub mod parent_no_code_product;
 pub mod parent_product;
 pub mod parent_weight_item;
 pub mod product;

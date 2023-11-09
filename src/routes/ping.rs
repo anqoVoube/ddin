@@ -7,7 +7,7 @@ use crate::routes::utils::{bad_request, default_missing_header, default_ok};
 
 pub async fn ping(
     Extension(auth): Extension<Auth>,
-    Extension(AppConnections {redis, database}): Extension<AppConnections>
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>
 ) -> Result<Response, Response>{
     auth.validate_business_id(&database).await?;
     Ok(default_ok())

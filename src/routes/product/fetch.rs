@@ -16,7 +16,7 @@ use crate::database::parent_product;
 
 use crate::database::parent_product::Entity as ParentProduct;
 use crate::routes::AppConnections;
-use crate::routes::utils::{default_missing_header, default_ok, not_found};
+use crate::routes::utils::not_found;
 
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -32,7 +32,7 @@ pub struct ProductSchema {
     price: i32,
     main_image: Option<String>,
     max_quantity: i32,
-    expiration_date: NaiveDate
+    expiration_date: Option<NaiveDate>
 }
 
 
@@ -42,11 +42,10 @@ pub struct ProductsSchema{
 }
 
 
-
 #[debug_handler] 
 pub async fn fetch_products(
     Extension(auth): Extension<Auth>,
-    Extension(AppConnections{redis, database}): Extension<AppConnections>, Path(code): Path<String>
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>, Path(code): Path<String>
 ) -> Result<Response, Response> {
     let products = Product::find()
         .find_with_related(ParentProduct)

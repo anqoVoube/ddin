@@ -35,7 +35,7 @@ impl From<BusinessModel> for BusinessSchema {
 }
 
 pub async fn list(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
 ) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
 
     let businesses = Business::find()
@@ -50,7 +50,7 @@ pub async fn list(
 }
 
 pub async fn get_object(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>, Path(business_id): Path<i32>
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>, Path(business_id): Path<i32>
 ) -> Result<Json<BusinessSchema>, StatusCode> {
 
     let business = Business::find_by_id(business_id).one(&database).await

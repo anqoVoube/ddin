@@ -25,7 +25,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn create(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
     Extension(auth): Extension<Auth>,
     Json(Body {parent_id, quantity, orig_price, price, produced_date}): Json<Body>
 ) -> Result<Response, Response> {
@@ -39,7 +39,7 @@ pub async fn create(
                     Condition::all()
                         .add(product::Column::BusinessId.eq(auth.business_id))
                         .add(product::Column::ExpirationDate.eq(expiration_date))
-                        .add(product::Column::ParentProductId.eq(parent_product.id))
+                        .add(product::Column::ParentId.eq(parent_product.id))
                 )
                 .one(&database)
                 .await.unwrap()
@@ -61,10 +61,10 @@ pub async fn create(
                 None => {
                     let new_product = product::ActiveModel {
                         price: Set(price),
-                        expiration_date: Set(produced_date + chrono::Duration::days(parent_product.expiration_in_days as i64)),
+                        expiration_date: Set(Some(produced_date + chrono::Duration::days(parent_product.expiration_in_days as i64))),
                         business_id: Set(auth.business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),
-                        parent_product_id: Set(parent_id),
+                        parent_id: Set(parent_id),
                         ..Default::default()
                     };
 

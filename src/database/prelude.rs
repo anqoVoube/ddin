@@ -11,6 +11,8 @@ pub use super::django_admin_log::Entity as DjangoAdminLog;
 pub use super::django_content_type::Entity as DjangoContentType;
 pub use super::django_migrations::Entity as DjangoMigrations;
 pub use super::django_session::Entity as DjangoSession;
+pub use super::no_code_product::Entity as NoCodeProduct;
+pub use super::parent_no_code_product::Entity as ParentNoCodeProduct;
 pub use super::parent_product::Entity as ParentProduct;
 pub use super::parent_weight_item::Entity as ParentWeightItem;
 pub use super::product::Entity as Product;

@@ -3,13 +3,13 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "product")]
+#[sea_orm(table_name = "no_code_product")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub price: i32,
-    pub expiration_date: Option<Date>,
     pub quantity: i32,
+    pub expiration_date: Option<Date>,
     pub business_id: i32,
     pub parent_id: i32,
 }
@@ -25,13 +25,13 @@ pub enum Relation {
     )]
     Business,
     #[sea_orm(
-        belongs_to = "super::parent_product::Entity",
+        belongs_to = "super::parent_no_code_product::Entity",
         from = "Column::ParentId",
-        to = "super::parent_product::Column::Id",
+        to = "super::parent_no_code_product::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    ParentProduct,
+    ParentNoCodeProduct,
 }
 
 impl Related<super::business::Entity> for Entity {
@@ -40,9 +40,9 @@ impl Related<super::business::Entity> for Entity {
     }
 }
 
-impl Related<super::parent_product::Entity> for Entity {
+impl Related<super::parent_no_code_product::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::ParentProduct.def()
+        Relation::ParentNoCodeProduct.def()
     }
 }
 

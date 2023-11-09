@@ -10,7 +10,7 @@ pub struct Model {
     pub price: i32,
     #[sea_orm(column_type = "Double")]
     pub kg_weight: f64,
-    pub parent_weight_item_id: i32,
+    pub parent_id: i32,
     pub expiration_date: Option<Date>,
     pub business_id: i32,
 }
@@ -27,7 +27,7 @@ pub enum Relation {
     Business,
     #[sea_orm(
         belongs_to = "super::parent_weight_item::Entity",
-        from = "Column::ParentWeightItemId",
+        from = "Column::ParentId",
         to = "super::parent_weight_item::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"

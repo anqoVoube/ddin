@@ -15,12 +15,27 @@ pub struct Model {
     pub main_image: Option<String>,
     pub images: Vec<String>,
     pub expiration_in_days: i32,
+    pub business_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::business::Entity",
+        from = "Column::BusinessId",
+        to = "super::business::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Business,
     #[sea_orm(has_many = "super::product::Entity")]
     Product,
+}
+
+impl Related<super::business::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Business.def()
+    }
 }
 
 impl Related<super::product::Entity> for Entity {

@@ -1,4 +1,3 @@
-use std::string::ToString;
 use axum::{Extension, Json};
 use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
@@ -7,70 +6,94 @@ use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilt
 use serde::{Deserialize, Serialize};
 use serde_repr::{Serialize_repr, Deserialize_repr};
 use http::StatusCode;
-use sea_orm::sea_query::{Expr, Func};
 use crate::core::auth::middleware::Auth;
 use crate::database::prelude::Product;
 use crate::database::prelude::ParentProduct;
-use crate::database::{parent_product, parent_weight_item, product, weight_item};
+use crate::database::{parent_no_code_product, parent_product, parent_weight_item, product, weight_item};
 use crate::database::prelude::WeightItem;
 use sea_orm::entity::*;
 use sea_orm::query::*;
+use crate::database::prelude::ParentNoCodeProduct;
 use crate::database::prelude::ParentWeightItem;
+use crate::database::weight_item::Column::ParentId;
 use crate::routes::AppConnections;
+use crate::routes::find::{Search, Types};
 use crate::routes::utils::condition::starts_with;
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
-#[repr(u8)]
-pub enum Types{
-    Product = 1,
-    WeightItem = 2,
-}
-#[derive(Deserialize, Serialize)]
-pub struct Search {
-    search: String,
-    r#type: Types,
-}
-
 
 #[derive(Serialize, Debug)]
-pub struct WeightItemSchema{
+pub struct ParentProductSchema{
     id: i32,
     title: String,
-    price: i32,
-    main_image: Option<String>,
-    max_kg_weight: f64,
-    expiration_date: Option<NaiveDate>
+    main_image: Option<String>
 }
 
 #[derive(Serialize, Debug)]
-pub struct WeightItemsSchema{
-    weight_items: Vec<WeightItemSchema>
+pub struct ParentProductsSchema{
+    result: Vec<ParentProductSchema>
 }
+
+#[derive(Serialize, Debug)]
+pub struct ParentWeightItemSchema{
+    id: i32,
+    title: String,
+    main_image: Option<String>
+}
+
+#[derive(Serialize, Debug)]
+pub struct ParentWeightItemsSchema{
+    result: Vec<ParentWeightItemSchema>
+}
+
+#[derive(Serialize, Debug)]
+pub struct ParentNoCodeProductSchema{
+    id: i32,
+    title: String,
+    main_image: Option<String>
+}
+
+#[derive(Serialize, Debug)]
+pub struct ParentNoCodeProductsSchema{
+    result: Vec<ParentNoCodeProductSchema>
+}
+
 
 pub async fn search(
     Extension(auth): Extension<Auth>,
     Extension(connections): Extension<AppConnections>,
     Query(query): Query<Search>
 ) -> Response{
-        println!("{} {:?}", query.search, query.r#type);
-        match query.r#type{
-            Types::Product => {
-                let data = find_product(query.search, auth.business_id, &connections.database).await;
-                ().into_response()
-            },
-            Types::WeightItem => {
-                let data = find_weight_item(
-                    query.search,
-                    auth.business_id,
-                    &connections.database
-                ).await;
-                (
-                    StatusCode::OK,
-                    Json(data)
-                ).into_response()
-            }
+    println!("{} {:?}", query.search, query.r#type);
+    match query.r#type{
+        Types::Product => {
+            let data = find_product(query.search, auth.business_id, &connections.database).await;
+            ().into_response()
+        },
+        Types::WeightItem => {
+            let data = find_parent_weight_item(
+                query.search,
+                auth.business_id,
+                &connections.database
+            ).await;
+            (
+                StatusCode::OK,
+                Json(data)
+            ).into_response()
+        },
+        Types::NoCodeProduct => {
+            let data = find_no_code_product(
+                query.search,
+                auth.business_id,
+                &connections.database
+            ).await;
+            (
+                StatusCode::OK,
+                Json(data)
+            ).into_response()
         }
+    }
 }
+
 
 pub async fn find_product(search: String, business_id: i32, database: &DatabaseConnection) -> i32{
     let products = Product::find()
@@ -88,47 +111,85 @@ pub async fn find_product(search: String, business_id: i32, database: &DatabaseC
     1
 }
 
-pub async fn find_weight_item(
+pub async fn find_parent_weight_item(
     search: String,
     business_id: i32,
     database: &DatabaseConnection
-) -> WeightItemsSchema{
+) -> ParentWeightItemsSchema{
     let like = format!("{}%", search.to_lowercase());
-    let weight_items = WeightItem::find()
-        .find_with_related(ParentWeightItem)
-
+    let parent_weight_items = ParentWeightItem::find()
         .filter(
-
             Condition::all()
-                .add(weight_item::Column::BusinessId.eq(business_id))
+                .add(
+                    Condition::all()
+                        .add(starts_with(&search, parent_weight_item::Column::Title, false))
+                )
                 .add(
                     Condition::any()
-                        // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
-                        .add(starts_with(&search, parent_weight_item::Column::Title, false))
+                        .add(parent_weight_item::Column::BusinessId.eq(business_id))
+                        .add(parent_weight_item::Column::BusinessId.is_null())
                 )
         )
         .all(database)
 
         .await.unwrap();
-    let mut response_body = WeightItemsSchema{
-        weight_items: vec![]
+
+    let mut response_body = ParentWeightItemsSchema{
+        result: vec![]
     };
 
-    for (weight_item, vec_parent_weight_item) in weight_items {
-        let parent_weight_item = vec_parent_weight_item.first().unwrap();
-        let weight_item_body = WeightItemSchema {
-            id: weight_item.id,
-            title: parent_weight_item.title.clone(),
-            price: weight_item.price,
-            max_kg_weight: weight_item.kg_weight,
-            expiration_date: weight_item.expiration_date,
-            main_image: parent_weight_item.main_image.clone()
+    for instance in parent_weight_items {
+        let weight_item = ParentWeightItemSchema {
+            id: instance.id,
+            title: instance.title.clone(),
+            main_image: instance.main_image.clone()
         };
 
-        response_body.weight_items.push(weight_item_body);
+        response_body.result.push(weight_item);
     }
     println!("{:?}", response_body);
     response_body
 }
 
 
+pub async fn find_no_code_product(
+    search: String,
+    business_id: i32,
+    database: &DatabaseConnection
+) -> ParentNoCodeProductsSchema{
+    let like = format!("{}%", search.to_lowercase());
+    let parent_no_code_products = ParentNoCodeProduct::find()
+        .filter(
+            Condition::all()
+                .add(
+                    Condition::all()
+                        .add(starts_with(&search, parent_no_code_product::Column::Title, false))
+
+                )
+                .add(
+                    Condition::any()
+                        .add(parent_no_code_product::Column::BusinessId.eq(business_id))
+                        .add(parent_no_code_product::Column::BusinessId.is_null())
+
+                )
+        )
+        .all(database)
+
+        .await.unwrap();
+
+    let mut response_body = ParentNoCodeProductsSchema{
+        result: vec![]
+    };
+
+    for instance in parent_no_code_products {
+        let product = ParentNoCodeProductSchema {
+            id: instance.id,
+            title: instance.title.clone(),
+            main_image: instance.main_image.clone()
+        };
+
+        response_body.result.push(product);
+    }
+    println!("{:?}", response_body);
+    response_body
+}

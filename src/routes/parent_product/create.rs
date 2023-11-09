@@ -20,7 +20,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn create(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
     Json(Body { code, title, description }): Json<Body>
 ) -> Response {
     let new_parent_product = parent_product::ActiveModel {

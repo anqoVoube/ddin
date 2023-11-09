@@ -3,9 +3,9 @@ use axum::response::{IntoResponse, Response};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
-use crate::database::prelude::WeightItem;
+use crate::database::prelude::{NoCodeProduct, WeightItem};
 use crate::database::product::Entity as Product;
-use crate::database::{product, weight_item};
+use crate::database::{no_code_product, product, weight_item};
 use crate::routes::{AppConnections};
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
@@ -20,6 +20,12 @@ pub struct ProductBody {
     quantity: i32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NoCodeProductBody {
+    id: i32,
+    quantity: i32
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeightItemBody {
@@ -31,13 +37,14 @@ pub struct WeightItemBody {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SellBody {
     weight_items: Vec<WeightItemBody>,
-    products: Vec<ProductBody>
+    products: Vec<ProductBody>,
+    no_code_products: Vec<NoCodeProductBody>
 }
 
 
 #[debug_handler]
 pub async fn sell(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);
@@ -82,7 +89,7 @@ pub async fn sell(
 
                 let total = pear.kg_weight.clone().unwrap();
                 if weight_item_instance.kg_weight > total{
-                    return bad_request("Not enough products in stock");
+                    return bad_request("Not enough kg in stock");
                 }
                 if weight_item_instance.kg_weight == total {
                     if let Err(err) = pear.delete(&database).await {
@@ -91,6 +98,40 @@ pub async fn sell(
                     }
                 } else {
                     pear.kg_weight = Set(total - weight_item_instance.kg_weight);
+
+                    if let Err(err) = pear.update(&database).await {
+                        println!("{:?}", err);
+                        return internal_server_error();
+                    }
+                }
+            },
+            Ok(None) => {
+                return not_found();
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                return internal_server_error();
+            }
+        };
+    }
+
+    for no_code_product_instance in sell.no_code_products{
+        match NoCodeProduct::find_by_id(no_code_product_instance.id).one(&database).await{
+            Ok(Some(pear)) => {
+                let mut pear: no_code_product::ActiveModel = pear.into();
+
+                let total = pear.quantity.clone().unwrap();
+                if no_code_product_instance.quantity > total {
+                    return bad_request("Not enough no code products in stock");
+                }
+
+                if no_code_product_instance.quantity == total {
+                    if let Err(err) = pear.delete(&database).await {
+                        println!("{:?}", err);
+                        return internal_server_error();
+                    }
+                } else {
+                    pear.quantity = Set(total - no_code_product_instance.quantity);
 
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);

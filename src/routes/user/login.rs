@@ -30,7 +30,7 @@ pub struct VerificationData {
 
 #[debug_handler]
 pub async fn login(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
     cookies: Cookies,
     Json(Body{ phone_number}): Json<Body>,
 ) -> Response {

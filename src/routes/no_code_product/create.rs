@@ -5,9 +5,10 @@ use http::StatusCode;
 use log::{error, info};
 use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use crate::routes::{AppConnections};
-use crate::database::parent_weight_item::Model as ParentWeightItemModel;
-use crate::database::prelude::{ParentWeightItem, WeightItem};
+use crate::routes::AppConnections;
+use crate::database::parent_no_code_product::Model as ParentNoCodeProductModel;
+use crate::database::prelude::{ParentNoCodeProduct, NoCodeProduct};
+use crate::database::no_code_product;
 use sea_orm::ColumnTrait;
 use crate::core::auth::middleware::Auth;
 use crate::database::weight_item;
@@ -19,15 +20,15 @@ pub struct Body {
     parent_id: i32,
     price: i32,
     orig_price: i32,
-    kg_weight: f64,
+    quantity: i32,
     produced_date: Option<NaiveDate>
 }
 
-pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<ParentWeightItemModel, StatusCode> {
-    let parent_weight_item = ParentWeightItem::find_by_id(id).one(database).await
+pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<ParentNoCodeProductModel, StatusCode> {
+    let product = ParentNoCodeProduct::find_by_id(id).one(database).await
         .map_err(|_error| {error!("Couldn't fetch parent_product with id: {}", id); StatusCode::INTERNAL_SERVER_ERROR})?;
 
-    if let Some(value) = parent_weight_item{
+    if let Some(value) = product{
         Ok(value)
     }
     else{
@@ -40,30 +41,30 @@ pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<
 pub async fn create(
     Extension(connections): Extension<AppConnections>,
     Extension(auth): Extension<Auth>,
-    Json(Body {parent_id, price, orig_price, kg_weight, produced_date}): Json<Body>
+    Json(Body {parent_id, price, orig_price, quantity, produced_date}): Json<Body>
 ) -> Response {
-    println!("{} {:?} {} {} {:?}", parent_id, kg_weight, orig_price, price, produced_date);
+    println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
     match get_object_by_id(&connections.database, parent_id).await{
-        Ok(parent_weight_item) => {
+        Ok(parent) => {
             let mut expiration_date = None;
-             if let Some(produced_date) = produced_date{
-                expiration_date = Some(produced_date + chrono::Duration::days(parent_weight_item.expiration_in_days as i64));
+            if let Some(produced_date) = produced_date{
+                expiration_date = Some(produced_date + chrono::Duration::days(parent.expiration_in_days as i64));
             }
-            println!("{:?}", parent_weight_item);
-            match WeightItem::find()
+            println!("{:?}", parent);
+            match NoCodeProduct::find()
                 .filter(
                     Condition::all()
-                        .add(weight_item::Column::BusinessId.eq(auth.business_id))
-                        .add(weight_item::Column::ExpirationDate.eq(expiration_date))
-                        .add(weight_item::Column::ParentId.eq(parent_weight_item.id))
+                        .add(no_code_product::Column::BusinessId.eq(auth.business_id))
+                        .add(no_code_product::Column::ExpirationDate.eq(expiration_date))
+                        .add(no_code_product::Column::ParentId.eq(parent.id))
                 )
                 .one(&connections.database)
                 .await.unwrap()
             {
                 Some(item) => {
-                    let adding_weight = item.clone().kg_weight;
-                    let mut item: weight_item::ActiveModel = item.into();
-                    item.kg_weight = Set(adding_weight + kg_weight);
+                    let adding_quantity = item.clone().quantity;
+                    let mut item: no_code_product::ActiveModel = item.into();
+                    item.quantity = Set(adding_quantity + quantity);
                     match item.update(&connections.database).await {
                         Ok(_) => {
                             default_created()
@@ -75,11 +76,11 @@ pub async fn create(
                     }
                 },
                 None => {
-                    let new_product = weight_item::ActiveModel {
+                    let new_product = no_code_product::ActiveModel {
                         price: Set(price),
                         expiration_date: Set(expiration_date),
                         business_id: Set(auth.business_id),
-                        kg_weight: Set(kg_weight),
+                        quantity: Set(quantity),
                         parent_id: Set(parent_id),
                         ..Default::default()
                     };
@@ -99,7 +100,6 @@ pub async fn create(
         },
         Err(error) => {
             error!("Couldn't fetch parent_weight_item with id. Original error is: {}", error);
-            println!("104");
             internal_server_error()
         }
     }

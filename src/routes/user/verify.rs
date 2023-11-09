@@ -25,7 +25,7 @@ pub struct Body {
 
 #[debug_handler]
 pub async fn verify(
-    Extension(AppConnections{redis, database}): Extension<AppConnections>,
+    Extension(AppConnections{redis, database, scylla}): Extension<AppConnections>,
     cookies: Cookies,
     Json(Body{verification_id, verification_code}): Json<Body>
 ) -> Response {
