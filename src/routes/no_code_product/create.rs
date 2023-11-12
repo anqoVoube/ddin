@@ -5,7 +5,6 @@ use http::StatusCode;
 use log::{error, info};
 use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use crate::routes::AppConnections;
 use crate::database::parent_no_code_product::Model as ParentNoCodeProductModel;
 use crate::database::prelude::{ParentNoCodeProduct, NoCodeProduct};
 use crate::database::no_code_product;
@@ -39,12 +38,12 @@ pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<
 
 #[debug_handler]
 pub async fn create(
-    Extension(connections): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Json(Body {parent_id, price, orig_price, quantity, produced_date}): Json<Body>
 ) -> Response {
     println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
-    match get_object_by_id(&connections.database, parent_id).await{
+    match get_object_by_id(&database, parent_id).await{
         Ok(parent) => {
             let mut expiration_date = None;
             if let Some(produced_date) = produced_date{
@@ -58,14 +57,14 @@ pub async fn create(
                         .add(no_code_product::Column::ExpirationDate.eq(expiration_date))
                         .add(no_code_product::Column::ParentId.eq(parent.id))
                 )
-                .one(&connections.database)
+                .one(&database)
                 .await.unwrap()
             {
                 Some(item) => {
                     let adding_quantity = item.clone().quantity;
                     let mut item: no_code_product::ActiveModel = item.into();
                     item.quantity = Set(adding_quantity + quantity);
-                    match item.update(&connections.database).await {
+                    match item.update(&database).await {
                         Ok(_) => {
                             default_created()
                         },
@@ -82,10 +81,11 @@ pub async fn create(
                         business_id: Set(auth.business_id),
                         quantity: Set(quantity),
                         parent_id: Set(parent_id),
+                        profit: Set(price - orig_price),
                         ..Default::default()
                     };
 
-                    match new_product.save(&connections.database).await {
+                    match new_product.save(&database).await {
                         Ok(instance) => {
                             info!("{:?}", instance);
                             default_created()

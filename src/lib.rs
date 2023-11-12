@@ -49,44 +49,18 @@ pub async fn init_scylla(scylla_url: &str) -> Session{
         .query(
             "CREATE TABLE IF NOT EXISTS statistics.products (
                 parent_id int,
+                item_type tinyint,
                 quantity int,
-                price int,
+                profit int,
                 business_id int,
-                date timestamp,
-                PRIMARY KEY ((parent_id, business_id), date)
+                date date,
+                PRIMARY KEY ((parent_id, business_id, item_type), date)
             );",
             &[],
         )
         .await
         .expect("Failed to create table products");
-    session
-        .query(
-            "CREATE TABLE IF NOT EXISTS statistics.weight_items (
-                parent_id int,
-                kg_weight float,
-                price int,
-                business_id int,
-                date timestamp,
-                PRIMARY KEY ((parent_id, business_id), date)
-            );",
-            &[],
-        )
-        .await
-        .expect("Failed to create table weight-items");
-    session
-        .query(
-            "CREATE TABLE IF NOT EXISTS statistics.no_code_products (
-                parent_id int,
-                quantity int,
-                price int,
-                business_id int,
-                date timestamp,
-                PRIMARY KEY ((parent_id, business_id), date)
-            );",
-            &[],
-        )
-        .await
-        .expect("Failed to create table no-code-products");
+
     session
 }
 

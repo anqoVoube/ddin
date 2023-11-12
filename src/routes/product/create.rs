@@ -11,7 +11,6 @@ use crate::database::product;
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::utils::{default_created, internal_server_error};
 use sea_orm::ColumnTrait;
-use crate::routes::AppConnections;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Body {
@@ -61,6 +60,7 @@ pub async fn create(
                 None => {
                     let new_product = product::ActiveModel {
                         price: Set(price),
+                        profit: Set(price - orig_price),
                         expiration_date: Set(Some(produced_date + chrono::Duration::days(parent_product.expiration_in_days as i64))),
                         business_id: Set(auth.business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),

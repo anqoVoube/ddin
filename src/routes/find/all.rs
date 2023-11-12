@@ -1,9 +1,9 @@
 use axum::{Extension, Json};
 use axum::extract::Query;
 use crate::core::auth::middleware::Auth;
-use crate::routes::AppConnections;
 use axum::response::{Response, IntoResponse};
 use http::StatusCode;
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use crate::routes::find::{find_product, find_no_code_product, find_weight_item, NoCodeProductSchema, ProductSchema, WeightItemSchema};
 
@@ -25,12 +25,12 @@ pub struct SearchResult {
 
 pub async fn search(
     Extension(auth): Extension<Auth>,
-    Extension(connections): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Query(Search {search}): Query<Search>
 ) -> Response {
-    let products = find_product(search.clone(), auth.business_id, &connections.database).await;
-    let weight_items = find_weight_item(search.clone(), auth.business_id, &connections.database).await;
-    let no_code_products = find_no_code_product(search, auth.business_id, &connections.database).await;
+    let products = find_product(search.clone(), auth.business_id, &database).await;
+    let weight_items = find_weight_item(search.clone(), auth.business_id, &database).await;
+    let no_code_products = find_no_code_product(search, auth.business_id, &database).await;
     (
         StatusCode::OK,
         Json(SearchResult{

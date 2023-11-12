@@ -6,7 +6,7 @@ use updddin::run;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let database_uri = dotenv!("DATABASE_URI");
+    let database_uri = dotenv!("DATABASE_URL");
     let redis_url = dotenv!("REDIS_URI");
     let scylla_uri = dotenv!("SCYLLA_URI");
     let running_port = dotenv!("API_PORT");

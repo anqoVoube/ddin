@@ -15,7 +15,6 @@ use crate::database::product;
 use crate::database::parent_product;
 
 use crate::database::parent_product::Entity as ParentProduct;
-use crate::routes::AppConnections;
 use crate::routes::utils::not_found;
 
 

@@ -7,7 +7,6 @@ use crate::database::parent_product;
 
 
 use log::{error, info};
-use crate::routes::AppConnections;
 use crate::routes::utils::{default_created, internal_server_error};
 
 

@@ -2,7 +2,6 @@ use axum::Extension;
 use axum::response::Response;
 use sea_orm::DatabaseConnection;
 use crate::core::auth::middleware::Auth;
-use crate::routes::AppConnections;
 use crate::routes::product::create::Body;
 use crate::routes::utils::{bad_request, default_missing_header, default_ok};
 

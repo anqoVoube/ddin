@@ -16,7 +16,6 @@ use sea_orm::query::*;
 use crate::database::prelude::ParentNoCodeProduct;
 use crate::database::prelude::ParentWeightItem;
 use crate::database::weight_item::Column::ParentId;
-use crate::routes::AppConnections;
 use crate::routes::find::{Search, Types};
 use crate::routes::utils::condition::starts_with;
 
@@ -60,20 +59,20 @@ pub struct ParentNoCodeProductsSchema{
 
 pub async fn search(
     Extension(auth): Extension<Auth>,
-    Extension(connections): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
     println!("{} {:?}", query.search, query.r#type);
     match query.r#type{
         Types::Product => {
-            let data = find_product(query.search, auth.business_id, &connections.database).await;
+            let data = find_product(query.search, auth.business_id, &database).await;
             ().into_response()
         },
         Types::WeightItem => {
             let data = find_parent_weight_item(
                 query.search,
                 auth.business_id,
-                &connections.database
+                &database
             ).await;
             (
                 StatusCode::OK,
@@ -84,7 +83,7 @@ pub async fn search(
             let data = find_no_code_product(
                 query.search,
                 auth.business_id,
-                &connections.database
+                &database
             ).await;
             (
                 StatusCode::OK,

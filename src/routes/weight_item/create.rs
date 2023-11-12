@@ -38,12 +38,12 @@ pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<
 
 #[debug_handler]
 pub async fn create(
-    Extension(connections): Extension<AppConnections>,
+    Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Json(Body {parent_id, price, orig_price, kg_weight, produced_date}): Json<Body>
 ) -> Response {
     println!("{} {:?} {} {} {:?}", parent_id, kg_weight, orig_price, price, produced_date);
-    match get_object_by_id(&connections.database, parent_id).await{
+    match get_object_by_id(&database, parent_id).await{
         Ok(parent_weight_item) => {
             let mut expiration_date = None;
              if let Some(produced_date) = produced_date{
@@ -57,14 +57,14 @@ pub async fn create(
                         .add(weight_item::Column::ExpirationDate.eq(expiration_date))
                         .add(weight_item::Column::ParentId.eq(parent_weight_item.id))
                 )
-                .one(&connections.database)
+                .one(&database)
                 .await.unwrap()
             {
                 Some(item) => {
                     let adding_weight = item.clone().kg_weight;
                     let mut item: weight_item::ActiveModel = item.into();
                     item.kg_weight = Set(adding_weight + kg_weight);
-                    match item.update(&connections.database).await {
+                    match item.update(&database).await {
                         Ok(_) => {
                             default_created()
                         },
@@ -81,10 +81,11 @@ pub async fn create(
                         business_id: Set(auth.business_id),
                         kg_weight: Set(kg_weight),
                         parent_id: Set(parent_id),
+                        profit: Set(price - orig_price),
                         ..Default::default()
                     };
 
-                    match new_product.save(&connections.database).await {
+                    match new_product.save(&database).await {
                         Ok(instance) => {
                             info!("{:?}", instance);
                             default_created()

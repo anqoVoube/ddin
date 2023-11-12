@@ -22,7 +22,6 @@ use crate::database::prelude::WeightItem;
 use sea_orm::entity::*;
 use sea_orm::query::*;
 use crate::database::prelude::ParentWeightItem;
-use crate::routes::AppConnections;
 use crate::routes::utils::condition::starts_with;
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]

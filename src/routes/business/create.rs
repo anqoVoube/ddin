@@ -9,8 +9,6 @@ use crate::database::business;
 use rust_decimal::Decimal;
 use log::{error, info};
 use crate::core::auth::middleware::Auth;
-use crate::RedisPool;
-use crate::routes::AppConnections;
 use crate::routes::utils::{internal_server_error};
 
 fn default_as_false() -> bool {

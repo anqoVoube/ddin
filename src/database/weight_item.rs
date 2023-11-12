@@ -13,6 +13,7 @@ pub struct Model {
     pub parent_id: i32,
     pub expiration_date: Option<Date>,
     pub business_id: i32,
+    pub profit: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

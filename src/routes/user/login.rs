@@ -13,8 +13,7 @@ use crate::database::verification::Entity as Verification;
 
 use rand::{Rng, thread_rng};
 use sea_orm::prelude::DateTimeWithTimeZone;
-use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
-use crate::routes::AppConnections;
+use tower_cookies::Cookies;
 
 const SESSION_KEY: &str = "session-key";
 

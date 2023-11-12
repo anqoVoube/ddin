@@ -11,7 +11,6 @@ use crate::database::parent_product::Model as ParentProductModel;
 use log::{error, info, warn};
 use crate::database::parent_product;
 use sea_orm::ColumnTrait;
-use crate::routes::AppConnections;
 
 #[derive(Serialize, Debug)]
 pub struct ParentProductSchema {

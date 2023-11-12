@@ -12,9 +12,7 @@ use crate::database::prelude::{User, Verification};
 use crate::database::user;
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
-use tokio::sync::Mutex;
 use crate::RedisPool;
-use crate::routes::AppConnections;
 
 const SESSION_KEY: &str = "session-key";
 
