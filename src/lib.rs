@@ -24,7 +24,7 @@ pub async fn init_redis(redis_uri: &str) -> RedisPool {
         Ok(manager) => manager,
         Err(e) => {
             error!("Failed to create Redis connection manager: {}", e);
-            panic!("Redis Error {}", e);
+            panic!("Redis Error: {}", e);
         }
     };
     bb8::Pool::builder()
