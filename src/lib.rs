@@ -62,6 +62,19 @@ pub async fn init_scylla(scylla_url: &str) -> Session{
         .expect("Failed to create table products");
 
     session
+        .query(
+            "CREATE TABLE IF NOT EXISTS statistics.profits (
+                business_id int,
+                profit int,
+                date date,
+                PRIMARY KEY ((date, business_id))
+            );",
+            &[],
+        )
+        .await
+        .expect("Failed to create table products");
+
+    session
 }
 
 pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, running_port: &str){

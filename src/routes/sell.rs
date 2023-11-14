@@ -51,8 +51,9 @@ pub enum ItemType{
     NoCodeProduct
 }
 
-trait EnumValue{
+pub trait EnumValue{
     fn get_value(&self) -> i8;
+    fn from_value(value: i8) -> Self;
 }
 
 impl EnumValue for ItemType{
@@ -61,6 +62,15 @@ impl EnumValue for ItemType{
             ItemType::Product => 1,
             ItemType::WeightItem => 2,
             ItemType::NoCodeProduct => 3
+        }
+    }
+
+    fn from_value(value: i8) -> Self {
+        match value {
+            1 => ItemType::Product,
+            2 => ItemType::WeightItem,
+            3 => ItemType::NoCodeProduct,
+            _ => panic!("Invalid item type")
         }
     }
 }
@@ -184,7 +194,7 @@ pub async fn sell(
 
                         let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                         let result = scylla
-                            .query(select_query, (parent_id, business_id, ItemType::Product.get_value(), current_date))
+                            .query(select_query, (parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
                             .await.unwrap();
 
                         match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
@@ -203,6 +213,30 @@ pub async fn sell(
                                 scylla.query(
                                     insert,
                                     (parent_id,  (weight_item_instance.kg_weight * 1000.0) as i32, (weight_item_instance.kg_weight * profit as f64) as i32, business_id, current_date, ItemType::WeightItem.get_value())
+                                ).await.expect("Tired");
+                            }
+                        };
+
+                        let select_query = "SELECT profit FROM statistics.profits WHERE business_id = ? AND date = ?";
+                        let result = scylla
+                            .query(select_query, (business_id, current_date))
+                            .await.unwrap();
+
+                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
+                            Some(row) => {
+                                let (current_profit, ) = row.expect("couldn't parse");
+                                let new_profit = current_profit + (weight_item_instance.kg_weight * profit as f64) as i32;
+                                let update_query = "UPDATE statistics.profits SET profit = ? WHERE business_id = ? AND date = ?";
+                                scylla
+                                    .query(update_query, (new_profit, business_id, current_date))
+                                    .await.unwrap();
+                            },
+                            None => {
+                                let insert = "INSERT INTO statistics.profits (business_id, profit, date) VALUES (?, ?, ?);";
+
+                                scylla.query(
+                                    insert,
+                                    (business_id, (weight_item_instance.kg_weight * profit as f64) as i32, current_date)
                                 ).await.expect("Tired");
                             }
                         };
@@ -247,19 +281,18 @@ pub async fn sell(
                         let current_date = Utc::now().naive_utc().date();
 
 
-                        let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
+                        let select_query = "SELECT quantity FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                         let result = scylla
-                            .query(select_query, (parent_id, business_id, ItemType::Product.get_value(), current_date))
+                            .query(select_query, (parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
                             .await.unwrap();
 
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
+                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
                             Some(row) => {
-                                let (current_quantity, current_profit) = row.expect("couldn't parse");
+                                let (current_quantity, ) = row.expect("couldn't parse");
                                 let new_quantity = current_quantity + no_code_product_instance.quantity;
-                                let new_profit = current_profit + no_code_product_instance.quantity * profit;
                                 let update_query = "UPDATE statistics.products SET quantity = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                                 scylla
-                                    .query(update_query, (new_quantity, parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
+                                    .query(update_query, (new_quantity, parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
                                     .await.unwrap();
                             },
                             None => {
@@ -267,7 +300,7 @@ pub async fn sell(
 
                                 scylla.query(
                                     insert,
-                                    (parent_id, no_code_product_instance.quantity, no_code_product_instance.quantity * profit, business_id, current_date, ItemType::WeightItem.get_value())
+                                    (parent_id, no_code_product_instance.quantity, no_code_product_instance.quantity * profit, business_id, current_date, ItemType::NoCodeProduct.get_value())
                                 ).await.expect("Tired");
                             }
                         };

@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use crate::core::auth::middleware::Auth;
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
+use crate::routes::sell::{EnumValue, ItemType};
+use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -85,19 +87,7 @@ fn month_vector() -> Vec<String> {
     )
 }
 
-#[derive(Serialize)]
-pub struct BestQuantity{
-    title: String,
-    main_image: Option<String>,
-    overall_quantity: i32
-}
 
-#[derive(Serialize)]
-pub struct BestProfit{
-    title: String,
-    main_image: Option<String>,
-    overall_profit: i32
-}
 
 #[derive(Serialize)]
 pub struct StatisticsResponse{
@@ -159,15 +149,16 @@ pub async fn full(
         }
     };
 
-    let query = "SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 2) GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
+    let query = "SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 3) GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
 
     let results = scylla.query(
         query,
         (business_id, start_date, end_date)
     ).await.expect("Failed to query");
 
-    let mut max_quantity_parent_id = 8;
+    let mut max_quantity_parent_id = 0;
     let mut max_quantity = 0;
+    let mut max_quantity_item_type = 1;
     let brah = results.rows.expect("");
     println!("{:?}", brah);
     println!("{}", brah.len());
@@ -177,6 +168,7 @@ pub async fn full(
             if quantity_sum > max_quantity{
                 max_quantity_parent_id = parent_id;
                 max_quantity = quantity_sum;
+                max_quantity_item_type = item_type;
             }
         }
     }
@@ -188,8 +180,9 @@ pub async fn full(
         (business_id, start_date, end_date)
     ).await.expect("Failed to query via scylla");
 
-    let mut max_profit_parent_id = 8;
+    let mut max_profit_parent_id = 0;
     let mut max_profit = 0;
+    let mut max_profit_item_type = 1;
     let mut profit_by_date: BTreeMap<NaiveDate, i32> = BTreeMap::new();
     for row in results.rows.expect("failed to get rows").into_typed::<(i32, NaiveDate, i8, i32)>() {
         if let Ok(result) = row{
@@ -197,6 +190,7 @@ pub async fn full(
             if profit > max_profit{
                 max_profit_parent_id = parent_id;
                 max_profit = profit;
+                max_profit_item_type = item_type;
             }
         }
     }
@@ -208,15 +202,43 @@ pub async fn full(
         (business_id, start_date, end_date)
     ).await.expect("Failed to query");
 
-    let mut prices: Vec<i32> = Vec::new();
     for row in results.rows.expect("failed to get rows").into_typed::<(NaiveDate, i32)>() {
-        let result = row.expect("Raw error in ScyllaDB");
-        let (date, profit) = result;
-        *profit_by_date.entry(date).or_insert(0) += profit;
+        if let Ok(result) = row{
+            let (date, profit) = result;
+            *profit_by_date.entry(date).or_insert(0) += profit;
+        }
     }
+    let best_quantity = match max_quantity_parent_id{
+        0 => BestQuantity{
+            title: "No items yet".to_string(),
+            main_image: Some("default.png".to_string()),
+            overall_quantity: 0
+        },
+        _ => match get_parent_by_id(
+            &database,
+            max_quantity_parent_id,
+            ItemType::from_value(max_quantity_item_type)
+        ).await.unwrap().fetch_data(StatsType::Quantity, max_quantity) {
+            Stats::Quantity(stats) => stats,
+            _ => panic!("Wrong stats type")
+        }
+    };
 
-    let max_quantity_parent_product = get_object_by_id(&database, max_quantity_parent_id).await.unwrap();
-    let max_profit_parent_product = get_object_by_id(&database, max_profit_parent_id).await.unwrap();
+    let best_profit = match max_profit_parent_id{
+        0 => BestProfit{
+            title: "No items yet".to_string(),
+            main_image: Some("default.png".to_string()),
+            overall_profit: 0
+        },
+        _ => match get_parent_by_id(
+            &database,
+            max_profit_parent_id,
+            ItemType::from_value(max_profit_item_type)
+        ).await.unwrap().fetch_data(StatsType::Profit, max_profit) {
+            Stats::Profit(stats) => stats,
+            _ => panic!("Wrong stats type")
+        }
+    };
     let mut prices: Vec<i32> = (0..namings.len()).map(|_| 0).collect();
     for (date, total_profit) in profit_by_date {
         println!("DATE!!! {}", date);
@@ -230,20 +252,15 @@ pub async fn full(
         }
     }
 
+    println!("{:?}", best_quantity);
+    println!("{:?}", best_profit);
+
     (
         StatusCode::OK,
         Json(
             StatisticsResponse{
-                best_quantity: BestQuantity{
-                    title: max_quantity_parent_product.title,
-                    main_image: max_quantity_parent_product.main_image,
-                    overall_quantity: max_quantity
-                },
-                best_profit: BestProfit{
-                    title: max_profit_parent_product.title,
-                    main_image: max_profit_parent_product.main_image,
-                    overall_profit: max_profit
-                },
+                best_quantity,
+                best_profit,
                 prices,
                 namings
             }
