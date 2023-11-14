@@ -20,7 +20,13 @@ pub async fn init_db(database_uri: &str) -> DatabaseConnection{
 }
 
 pub async fn init_redis(redis_uri: &str) -> RedisPool {
-    let manager = bb8_redis::RedisConnectionManager::new(redis_uri).unwrap();
+    let manager = match bb8_redis::RedisConnectionManager::new(redis_uri) {
+        Ok(manager) => manager,
+        Err(e) => {
+            error!("Failed to create Redis connection manager: {}", e);
+            panic!(e);
+        }
+    };
     bb8::Pool::builder()
         .build(manager)
         .await
