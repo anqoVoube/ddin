@@ -19,7 +19,7 @@ include_dir = "0.7.3"
 log = "0.4.20"
 mime_guess = "2.0.4"
 rand = "0.8.5"
-redis = { version = "0.23.3", features = ["tokio-comp"] }
+redis = { version = "0.23.3", features = ["tokio-comp", "tls", "tokio-native-tls", "tokio-native-tls-comp"] }
 rust_decimal = "1.32.0"
 scylla = "0.10.1"
 sea-orm = { version = "0.12.2", features = ["sqlx-postgres", "runtime-tokio-rustls"] }
