@@ -1,6 +1,7 @@
 pub mod media;
 pub mod condition;
 pub mod get_parent;
+mod space_upload;
 
 use axum::body::Body;
 use axum::Json;

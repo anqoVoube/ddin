@@ -12,9 +12,11 @@ mod sell;
 mod parent_no_code_product;
 mod no_code_product;
 mod statistics;
+mod product_request;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
+use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 
 
@@ -57,6 +59,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
     Router::new()
         .route("/ping", get(ping))
+        // .route("/request", post(product_request::create::create))
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
         .nest("/find", find_router())
@@ -66,6 +69,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .nest("/no-code-product", no_code_product_router())
         .nest("/statistics", statistics_router())
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 2))
         .nest("/user/", user_router())
 }
 

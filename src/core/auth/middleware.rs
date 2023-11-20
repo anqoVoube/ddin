@@ -76,7 +76,7 @@ pub async fn auth_getter<B>(
 
     let extensions = request.extensions_mut();
     if let Some(session_id) = cookies.get(SESSION_KEY){
-        let mut redis_conn = connections.redis.get().await.expect("Failed to get Redis connection");
+        let mut redis_conn = connections.redis.get().await.expect("Failed to get Redis connection.");
         let user_id: i32 = redis_conn.get(session_id.value()).await.unwrap();
         extensions.insert(
             Auth{
