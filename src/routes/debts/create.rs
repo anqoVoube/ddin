@@ -20,6 +20,12 @@ pub struct Body {
     name: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResponseBody {
+    id: i32,
+    name: String,
+}
+
 pub async fn create(
     Extension(auth): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
@@ -34,7 +40,14 @@ pub async fn create(
     match new_debt_user.save(&database).await {
         Ok(instance) => {
             info!("{:?}", instance);
-            default_created()
+            let response = ResponseBody{
+                id: instance.id.unwrap(),
+                name: instance.name.unwrap()
+            };
+            (
+                StatusCode::CREATED,
+                Json(response)
+            ).into_response()
         },
         Err(error) => {
             error!("Unable to create {:?}. Original error was {}", 1, error);
