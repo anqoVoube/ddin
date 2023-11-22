@@ -127,11 +127,11 @@ pub async fn fetch_products(
         }
     });
     // Send request
-    let response = reqwest::Client::new()
-    .post(centrifuge_url)
-    .headers(headers)
-    .json(&payload)
-    .send().await.unwrap();
+    // let response = reqwest::Client::new()
+    // .post(centrifuge_url)
+    // .headers(headers)
+    // .json(&payload)
+    // .send().await.unwrap();
 
     println!("TELL");
     println!("{:#?}", response_body);
