@@ -13,6 +13,7 @@ mod parent_no_code_product;
 mod no_code_product;
 mod statistics;
 pub mod product_request;
+mod parent_weight_item;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};

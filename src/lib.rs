@@ -1,5 +1,5 @@
 
-mod routes;
+pub mod routes;
 mod database;
 mod core;
 

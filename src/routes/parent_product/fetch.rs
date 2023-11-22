@@ -11,6 +11,7 @@ use crate::database::parent_product::Model as ParentProductModel;
 use log::{error, info, warn};
 use crate::database::parent_product;
 use sea_orm::ColumnTrait;
+use crate::core::auth::middleware::Auth;
 
 #[derive(Serialize, Debug)]
 pub struct ParentProductSchema {
@@ -34,18 +35,29 @@ impl From<ParentProductModel> for ParentProductSchema {
 #[debug_handler]
 pub async fn get_object_by_code(
     Extension(database): Extension<DatabaseConnection>,
+    Extension(Auth{user_id, business_id}): Extension<Auth>,
     Path(code): Path<String>
 ) -> Result<Json<ParentProductSchema>, StatusCode> {
     println!("REQUEST!");
-    match get_object(&database, code).await{
+    match get_object(&database, code, business_id).await{
         Ok(instance) => Ok(Json(instance.into())),
         Err(error_status_code) => Err(error_status_code)
     }
 }
 
-pub async fn get_object(database: &DatabaseConnection, code: String) -> Result<ParentProductModel, StatusCode> {
-    let mut condition = Condition::all();
-    condition = condition.add(parent_product::Column::Code.eq(code.clone()));
+pub async fn get_object(database: &DatabaseConnection, code: String, business_id: i32) -> Result<ParentProductModel, StatusCode> {
+    let condition = Condition::all()
+        .add(
+            Condition::all()
+                .add(parent_product::Column::Code.eq(code.clone()))
+        )
+        .add(
+            Condition::any()
+                .add(parent_product::Column::BusinessId.eq(business_id))
+                .add(parent_product::Column::BusinessId.is_null())
+
+        );
+
     let parent_product = ParentProduct::find().filter(condition).one(database).await
         .map_err(|_error| {warn!("Couldn't fetch parent_product with code: {}", &code); StatusCode::INTERNAL_SERVER_ERROR})?;
 

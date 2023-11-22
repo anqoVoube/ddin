@@ -17,7 +17,7 @@ use crate::database::parent_product;
 use crate::database::parent_product::Entity as ParentProduct;
 use crate::routes::utils::not_found;
 use serde_json::json;
-
+use crate::routes::parent_product::fetch::{get_object, ParentProductSchema};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Body {
@@ -68,7 +68,7 @@ pub async fn fetch_products(
         .filter(
             Condition::all()
                 .add(product::Column::BusinessId.eq(auth.business_id))
-                .add(parent_product::Column::Code.eq(code))
+                .add(parent_product::Column::Code.eq(code.clone()))
         )
 
         .all(&database)
@@ -80,7 +80,18 @@ pub async fn fetch_products(
     };
 
     if products.len() == 0{
-        return Err(not_found());
+        return match get_object(&database, code, auth.business_id).await {
+            Ok(parent_product) => {
+                let parent_product_schema: ParentProductSchema = parent_product.into();
+                return Ok(
+                    (
+                        StatusCode::BAD_REQUEST,
+                        Json(parent_product_schema)
+                    ).into_response()
+                );
+            },
+            Err(error_status_code) => Err(not_found())
+        };
     }
 
     for (product, vec_parent_product) in products{

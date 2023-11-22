@@ -81,7 +81,6 @@ pub struct NoCodeProductSchema{
 }
 
 #[derive(Serialize,  Deserialize, Debug)]
-
 pub struct NoCodeProductsSchema{
     result: Vec<NoCodeProductSchema>
 }
