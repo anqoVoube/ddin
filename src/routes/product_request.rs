@@ -27,9 +27,9 @@ pub struct ObjectBody{
 pub async fn upload(
     mut multipart: Multipart
 ) -> Response {
-    let mut data = HashMap::new();
+    // let mut data = HashMap::new();
     let mut objects: HashMap<usize, ObjectBody> = HashMap::new();
-    let mut file_names: HashMap<String, String> = HashMap::new();
+    // let mut file_names: HashMap<String, String> = HashMap::new();
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
         let count = name.split("_").collect::<Vec<&str>>().first().unwrap().parse::<usize>().unwrap();
@@ -37,7 +37,7 @@ pub async fn upload(
 
         if name.ends_with("photo") {
             // Generate a unique filename for the image
-            let filename = format!("{}.jpg", object.title.unwrap());
+            let filename = format!("{}.jpg", object.title.clone().unwrap());
 
             if let Ok(_) = fs::create_dir_all("/some/dir"){
                 println!("Created directory")

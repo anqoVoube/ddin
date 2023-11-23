@@ -39,7 +39,7 @@ pub struct WeightItemBody {
     kg_weight: f64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DebtUserBody{
     id: i32,
     paid_price: i32
@@ -99,7 +99,7 @@ pub async fn sell(
     println!("{:?}", sell);
 
     let mut grant_total = 0;
-    for product_instance in sell.products{
+    for product_instance in &sell.products{
         match Product::find_by_id(product_instance.id).one(&database).await{
             Ok(Some(pear)) => {
                 let mut pear: product::ActiveModel = pear.into();
@@ -187,7 +187,7 @@ pub async fn sell(
         };
     }
 
-    for weight_item_instance in sell.weight_items{
+    for weight_item_instance in &sell.weight_items{
         match WeightItem::find_by_id(weight_item_instance.id).one(&database).await{
             Ok(Some(pear)) => {
                 let mut pear: weight_item::ActiveModel = pear.into();
@@ -195,7 +195,7 @@ pub async fn sell(
                 let parent_id = pear.parent_id.clone().unwrap();
                 let total = pear.kg_weight.clone().unwrap();
                 let price = pear.price.clone().unwrap();
-                grant_total += weight_item_instance.kg_weight * price;
+                grant_total += (weight_item_instance.kg_weight * price as f64) as i32;
                 if weight_item_instance.kg_weight > total{
                     return bad_request("Not enough kg in stock");
                 }
@@ -274,7 +274,7 @@ pub async fn sell(
         };
     }
 
-    for no_code_product_instance in sell.no_code_products{
+    for no_code_product_instance in &sell.no_code_products{
         match NoCodeProduct::find_by_id(no_code_product_instance.id).one(&database).await{
             Ok(Some(pear)) => {
                 let mut pear: no_code_product::ActiveModel = pear.into();
