@@ -33,6 +33,7 @@ pub async fn create(
 ) -> Response{
     let new_debt_user = rent::ActiveModel {
         name: Set(name),
+        price: Set(0),
         business_id: Set(auth.business_id),
         ..Default::default()
     };

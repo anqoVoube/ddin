@@ -2,14 +2,16 @@ use std::sync::Arc;
 use axum::{Extension, Json, debug_handler};
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
+use log::{error, info};
 use scylla::{IntoTypedRows, Session};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
+use serde_json::json;
 use crate::core::auth::middleware::Auth;
-use crate::database::prelude::{NoCodeProduct, WeightItem};
+use crate::database::prelude::{NoCodeProduct, Rent, WeightItem};
 use crate::database::product::Entity as Product;
-use crate::database::{no_code_product, product, weight_item};
+use crate::database::{no_code_product, product, rent, rent_history, weight_item};
 use crate::routes::ScyllaDBConnection;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
@@ -37,12 +39,25 @@ pub struct WeightItemBody {
     kg_weight: f64,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct DebtUserBody{
+    id: i32,
+    paid_price: i32
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SellBody {
     weight_items: Vec<WeightItemBody>,
     products: Vec<ProductBody>,
-    no_code_products: Vec<NoCodeProductBody>
+    no_code_products: Vec<NoCodeProductBody>,
+    debt_user: Option<DebtUserBody>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RentHistoryProducts{
+    weight_items: Vec<WeightItemBody>,
+    products: Vec<ProductBody>,
+    no_code_products: Vec<NoCodeProductBody>,
 }
 
 pub enum ItemType{
@@ -82,6 +97,8 @@ pub async fn sell(
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);
+
+    let mut grant_total = 0;
     for product_instance in sell.products{
         match Product::find_by_id(product_instance.id).one(&database).await{
             Ok(Some(pear)) => {
@@ -89,6 +106,8 @@ pub async fn sell(
                 let profit = pear.profit.clone().unwrap();
                 let total = pear.quantity.clone().unwrap();
                 let parent_id = pear.parent_id.clone().unwrap();
+                let price = pear.price.clone().unwrap();
+                grant_total += product_instance.quantity * price;
                 if product_instance.quantity > total{
                     return bad_request("Not enough products in stock");
                 }
@@ -175,6 +194,8 @@ pub async fn sell(
                 let profit = pear.profit.clone().unwrap();
                 let parent_id = pear.parent_id.clone().unwrap();
                 let total = pear.kg_weight.clone().unwrap();
+                let price = pear.price.clone().unwrap();
+                grant_total += weight_item_instance.kg_weight * price;
                 if weight_item_instance.kg_weight > total{
                     return bad_request("Not enough kg in stock");
                 }
@@ -261,6 +282,8 @@ pub async fn sell(
                 let total = pear.quantity.clone().unwrap();
                 let profit = pear.profit.clone().unwrap();
                 let parent_id = pear.parent_id.clone().unwrap();
+                let price = pear.price.clone().unwrap();
+                grant_total += no_code_product_instance.quantity * price;
 
                 if no_code_product_instance.quantity > total {
                     return bad_request("Not enough no code products in stock");
@@ -279,8 +302,6 @@ pub async fn sell(
                         return internal_server_error();
                     } else {
                         let current_date = Utc::now().naive_utc().date();
-
-
                         let select_query = "SELECT quantity FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                         let result = scylla
                             .query(select_query, (parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
@@ -339,6 +360,48 @@ pub async fn sell(
                 return internal_server_error();
             }
         };
+    }
+
+    if let Some(user_data) = sell.debt_user {
+        match Rent::find_by_id(user_data.id).one(&database).await{
+            Ok(Some(pear)) => {
+                let mut pear: rent::ActiveModel = pear.into();
+                let total = pear.price.clone().unwrap();
+                let new_debt = user_data.paid_price + total;
+                pear.price = Set(new_debt);
+                if let Err(err) = pear.update(&database).await {
+                    println!("{:?}", err);
+                    return internal_server_error();
+                }
+
+                let new_rent_history = rent_history::ActiveModel {
+                    grand_total: Set(grant_total),
+                    paid_amount: Set(user_data.paid_price),
+                    products: Set(json!(RentHistoryProducts{
+                        products: sell.products,
+                        weight_items: sell.weight_items,
+                        no_code_products: sell.no_code_products
+                    })),
+                    ..Default::default()
+                };
+
+                match new_rent_history.save(&database).await {
+                    Ok(instance) => {
+                        info!("{:?}", instance);
+                    },
+                    Err(error) => {
+                        error!("Unable to create {:?}. Original error was {}", 1, error);
+                    }
+                }
+            },
+            Ok(None) => {
+                return not_found();
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                return internal_server_error();
+            }
+        }
     }
 
     default_ok()

@@ -24,7 +24,7 @@ pub struct ObjectBody{
 }
 
 #[debug_handler]
-async fn upload(
+pub async fn upload(
     mut multipart: Multipart
 ) -> Response {
     let mut data = HashMap::new();
