@@ -63,6 +63,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
         .route("/debts", get(debts::find::small_serializer_search).post(debts::create::create))
+        .route("/debts/full", get(debts::find::full_serializer_search))
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
         .nest("/find", find_router())

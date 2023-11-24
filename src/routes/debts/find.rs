@@ -1,12 +1,8 @@
-use std::string::ToString;
-use std::sync::Arc;
 use axum::{Extension, Json};
 use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
-use chrono::NaiveDate;
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use http::StatusCode;
-use scylla::Session;
 use crate::core::auth::middleware::Auth;
 
 use sea_orm::entity::*;
@@ -18,19 +14,30 @@ use crate::routes::utils::condition::starts_with;
 
 #[derive(Deserialize, Serialize)]
 pub struct Search {
-    search: String,
+    search: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Debt{
+pub struct SmallDebt{
     id: i32,
     name: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FullDebt{
+    id: i32,
+    name: String,
+    price: i32
+}
 
 #[derive(Serialize,  Deserialize, Debug)]
-pub struct Debts{
-    debts: Vec<Debt>
+pub struct SmallDebts{
+    debts: Vec<SmallDebt>
+}
+
+#[derive(Serialize,  Deserialize, Debug)]
+pub struct FullDebts{
+    debts: Vec<FullDebt>
 }
 
 pub async fn small_serializer_search(
@@ -38,18 +45,22 @@ pub async fn small_serializer_search(
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
+    let mut condition = Condition::all()
+        .add(rent::Column::BusinessId.eq(auth.business_id));
+    if let Some(search) = query.search{
+        condition = condition.add(starts_with(&search, rent::Column::Name, false))
+    }
+
     let debts = Rent::find()
         .filter(
-            Condition::all()
-                .add(rent::Column::BusinessId.eq(auth.business_id))
-                .add(starts_with(&query.search, rent::Column::Name, false))
+            condition
         )
         .all(&database)
         .await
         .unwrap();
-    let mut debts_schema = Debts{debts: vec![]};
+    let mut debts_schema = SmallDebts{debts: vec![]};
     for debt in debts{
-        debts_schema.debts.push(Debt{
+        debts_schema.debts.push(SmallDebt{
             id: debt.id,
             name: debt.name
         })
@@ -74,11 +85,12 @@ pub async fn full_serializer_search(
         .all(&database)
         .await
         .unwrap();
-    let mut debts_schema = Debts{debts: vec![]};
+    let mut debts_schema = FullDebts{debts: vec![]};
     for debt in debts{
-        debts_schema.debts.push(Debt{
+        debts_schema.debts.push(FullDebt{
             id: debt.id,
-            name: debt.name
+            name: debt.name,
+            price: debt.price
         })
     }
     (
