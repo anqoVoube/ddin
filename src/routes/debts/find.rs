@@ -76,11 +76,14 @@ pub async fn full_serializer_search(
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
+    let mut condition = Condition::all()
+        .add(rent::Column::BusinessId.eq(auth.business_id));
+    if let Some(search) = query.search{
+        condition = condition.add(starts_with(&search, rent::Column::Name, false))
+    }
     let debts = Rent::find()
         .filter(
-            Condition::all()
-                .add(rent::Column::BusinessId.eq(auth.business_id))
-                .add(starts_with(&query.search, rent::Column::Name, false))
+            condition
         )
         .all(&database)
         .await
