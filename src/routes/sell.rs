@@ -431,15 +431,18 @@ pub async fn sell(
                     paid_amount: Set(user_data.paid_price),
                     products: Set(serialized_data.into()),
                     buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
+                    rent_user_id: Set(user_data.id),
                     ..Default::default()
                 };
 
                 match new_rent_history.save(&database).await {
                     Ok(instance) => {
+                        println!("Successfully created instance");
                         info!("{:?}", instance);
                     },
                     Err(error) => {
                         error!("Unable to create {:?}. Original error was {}", 1, error);
+                        println!("Failed to create instance. Error is {:?}", error)
                     }
                 }
             },
