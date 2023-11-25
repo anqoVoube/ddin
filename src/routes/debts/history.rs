@@ -28,12 +28,12 @@ struct Histories{
 pub async fn get_history(
     Extension(Auth{user_id, business_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
-    Path(debt_user_id): Path<i32>
+    Path(id): Path<i32>
 ) -> Response{
     // ToDo: Check RentUser for business_id for security purposes
     let histories = RentHistory::find()
         .filter(
-            rent_history::Column::RentUserId.eq(debt_user_id)
+            rent_history::Column::RentUserId.eq(id)
         )
         .all(&database)
         .await

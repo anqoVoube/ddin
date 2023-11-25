@@ -65,6 +65,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
         .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))
         .route("/debts/payment", post(debts::update::update))
+        .route("/debts/history/:id", post(debts::history::get_history))
 
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
