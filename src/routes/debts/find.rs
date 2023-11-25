@@ -101,5 +101,3 @@ pub async fn full_serializer_search(
         Json(debts_schema)
     ).into_response()
 }
-
-

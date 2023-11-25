@@ -22,11 +22,19 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Business,
+    #[sea_orm(has_many = "super::rent_history::Entity")]
+    RentHistory,
 }
 
 impl Related<super::business::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Business.def()
+    }
+}
+
+impl Related<super::rent_history::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::RentHistory.def()
     }
 }
 

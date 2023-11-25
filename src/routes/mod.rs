@@ -22,7 +22,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 
 
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use redis::aio::Connection;
 
 use scylla::Session;
@@ -62,8 +62,10 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
-        .route("/debts", get(debts::find::small_serializer_search).post(debts::create::create))
-        .route("/debts/full", get(debts::find::full_serializer_search))
+
+        .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))
+        .route("/debts/:id", put(debts::update::update))
+
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
         .nest("/find", find_router())

@@ -7,6 +7,7 @@ use scylla::{IntoTypedRows, Session};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
+use sea_orm::prelude::{DateTimeUtc, DateTimeWithTimeZone};
 use serde_json::json;
 use crate::core::auth::middleware::Auth;
 use crate::database::prelude::{NoCodeProduct, Rent, WeightItem};
@@ -27,16 +28,38 @@ pub struct ProductBody {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NoCodeProductBody {
-    id: i32,
-    quantity: i32
+pub struct ParentProductBody {
+    parent_id: i32,
+    quantity: i32,
+    sell_price: i32
 }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NoCodeProductBody {
+    id: i32,
+    quantity: i32,
+    sell_price: i32
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParentNoCodeProductBody {
+    parent_id: i32,
+    quantity: i32,
+    sell_price: i32
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeightItemBody {
     id: i32,
     kg_weight: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParentWeightItemBody {
+    parent_id: i32,
+    kg_weight: f64,
+    sell_price: i32
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -55,9 +78,9 @@ pub struct SellBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RentHistoryProducts{
-    weight_items: Vec<WeightItemBody>,
-    products: Vec<ProductBody>,
-    no_code_products: Vec<NoCodeProductBody>,
+    weight_items: Vec<ParentWeightItemBody>,
+    products: Vec<ParentProductBody>,
+    no_code_products: Vec<ParentNoCodeProductBody>,
 }
 
 pub enum ItemType{
@@ -97,10 +120,13 @@ pub async fn sell(
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);
-
+    let mut history_products: Vec<ParentProductBody> = vec!();
+    let mut history_weight_items: Vec<ParentWeightItemBody> = vec!();
+    let mut history_no_code_products: Vec<ParentNoCodeProductBody> = vec!();
     let mut grant_total = 0;
     for product_instance in &sell.products{
-        match Product::find_by_id(product_instance.id).one(&database).await{
+        match Product::find_by_id(product_instance.id)
+            .one(&database).await{
             Ok(Some(pear)) => {
                 let mut pear: product::ActiveModel = pear.into();
                 let profit = pear.profit.clone().unwrap();
@@ -108,6 +134,13 @@ pub async fn sell(
                 let parent_id = pear.parent_id.clone().unwrap();
                 let price = pear.price.clone().unwrap();
                 grant_total += product_instance.quantity * price;
+
+                history_products.push(ParentProductBody{
+                    parent_id: parent_id,
+                    quantity: product_instance.quantity,
+                    sell_price: price
+                });
+
                 if product_instance.quantity > total{
                     return bad_request("Not enough products in stock");
                 }
@@ -149,7 +182,6 @@ pub async fn sell(
                                 ).await.expect("Tired");
                             }
                         };
-
 
                         let select_query = "SELECT profit FROM statistics.profits WHERE business_id = ? AND date = ?";
                         let result = scylla
@@ -196,6 +228,13 @@ pub async fn sell(
                 let total = pear.kg_weight.clone().unwrap();
                 let price = pear.price.clone().unwrap();
                 grant_total += (weight_item_instance.kg_weight * price as f64) as i32;
+
+                history_weight_items.push(ParentWeightItemBody{
+                    parent_id: parent_id,
+                    kg_weight: weight_item_instance.kg_weight,
+                    sell_price: price
+                });
+
                 if weight_item_instance.kg_weight > total{
                     return bad_request("Not enough kg in stock");
                 }
@@ -285,6 +324,12 @@ pub async fn sell(
                 let price = pear.price.clone().unwrap();
                 grant_total += no_code_product_instance.quantity * price;
 
+                history_no_code_products.push(ParentNoCodeProductBody{
+                    parent_id: parent_id,
+                    quantity: no_code_product_instance.quantity,
+                    sell_price: price
+                });
+
                 if no_code_product_instance.quantity > total {
                     return bad_request("Not enough no code products in stock");
                 }
@@ -367,7 +412,7 @@ pub async fn sell(
             Ok(Some(pear)) => {
                 let mut pear: rent::ActiveModel = pear.into();
                 let total = pear.price.clone().unwrap();
-                let new_debt = user_data.paid_price + total;
+                let new_debt = total - user_data.paid_price + grant_total;
                 pear.price = Set(new_debt);
                 if let Err(err) = pear.update(&database).await {
                     println!("{:?}", err);
@@ -378,10 +423,12 @@ pub async fn sell(
                     grand_total: Set(grant_total),
                     paid_amount: Set(user_data.paid_price),
                     products: Set(json!(RentHistoryProducts{
-                        products: sell.products,
-                        weight_items: sell.weight_items,
-                        no_code_products: sell.no_code_products
+                        products: history_products,
+                        weight_items: history_weight_items,
+                        no_code_products: history_no_code_products,
+
                     })),
+                    buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
                     ..Default::default()
                 };
 

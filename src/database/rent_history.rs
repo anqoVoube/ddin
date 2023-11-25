@@ -11,9 +11,26 @@ pub struct Model {
     pub products: Json,
     pub grand_total: i32,
     pub paid_amount: i32,
+    pub buy_date: DateTimeWithTimeZone,
+    pub rent_user_id: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::rent::Entity",
+        from = "Column::RentUserId",
+        to = "super::rent::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Rent,
+}
+
+impl Related<super::rent::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Rent.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
