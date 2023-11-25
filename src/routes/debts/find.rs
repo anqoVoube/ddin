@@ -40,36 +40,6 @@ pub struct FullDebts{
     debts: Vec<FullDebt>
 }
 
-pub async fn small_serializer_search(
-    Extension(auth): Extension<Auth>,
-    Extension(database): Extension<DatabaseConnection>,
-    Query(query): Query<Search>
-) -> Response{
-    let mut condition = Condition::all()
-        .add(rent::Column::BusinessId.eq(auth.business_id));
-    if let Some(search) = query.search{
-        condition = condition.add(starts_with(&search, rent::Column::Name, false))
-    }
-
-    let debts = Rent::find()
-        .filter(
-            condition
-        )
-        .all(&database)
-        .await
-        .unwrap();
-    let mut debts_schema = SmallDebts{debts: vec![]};
-    for debt in debts{
-        debts_schema.debts.push(SmallDebt{
-            id: debt.id,
-            name: debt.name
-        })
-    }
-    (
-        StatusCode::OK,
-        Json(debts_schema)
-    ).into_response()
-}
 
 pub async fn full_serializer_search(
     Extension(auth): Extension<Auth>,
