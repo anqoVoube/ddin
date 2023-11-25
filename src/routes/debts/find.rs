@@ -3,6 +3,7 @@ use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use http::StatusCode;
+use multipart::server::nickel::nickel::hyper::header::q;
 use crate::core::auth::middleware::Auth;
 
 use sea_orm::entity::*;
@@ -10,11 +11,17 @@ use sea_orm::query::*;
 use serde::{Deserialize, Serialize};
 use crate::database::prelude::Rent;
 use crate::database::rent;
+use crate::database::rent::Model;
 use crate::routes::utils::condition::starts_with;
+
+const DEFAULT_PAGE_SIZE: i32 = 15;
+const DEFAULT_PAGE: i32 = 1;
 
 #[derive(Deserialize, Serialize)]
 pub struct Search {
     search: Option<String>,
+    page: Option<i32>,
+    page_size: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,18 +53,27 @@ pub async fn full_serializer_search(
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
+    let mut debts: Vec<Model> = vec![];
     let mut condition = Condition::all()
         .add(rent::Column::BusinessId.eq(auth.business_id));
     if let Some(search) = query.search{
-        condition = condition.add(starts_with(&search, rent::Column::Name, false))
+        condition = condition.add(starts_with(&search, rent::Column::Name, false));
+        debts = Rent::find()
+            .filter(
+                condition
+            )
+            .all(&database)
+            .await
+            .unwrap();
+    } else {
+        debts = Rent::find()
+            .offset(((query.page.unwrap_or(DEFAULT_PAGE) - 1) * query.page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
+            .limit(query.page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
+            .all(&database)
+            .await
+            .unwrap();
     }
-    let debts = Rent::find()
-        .filter(
-            condition
-        )
-        .all(&database)
-        .await
-        .unwrap();
+
     let mut debts_schema = FullDebts{debts: vec![]};
     for debt in debts{
         debts_schema.debts.push(FullDebt{
