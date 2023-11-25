@@ -4,18 +4,19 @@ use http::StatusCode;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use crate::core::auth::middleware::Auth;
 use crate::database::prelude::RentHistory;
 use crate::database::rent_history;
 use axum::response::{IntoResponse, Response};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
+use crate::routes::sell::RentHistoryProducts;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct History{
     id: i32,
-    products: Value,
+    products: RentHistoryProducts,
     buy_date: DateTimeWithTimeZone
 }
 
@@ -42,9 +43,18 @@ pub async fn get_history(
     let mut response_body = Histories{histories: vec![]};
 
     for history in histories{
+        let products_str = history.products.to_string();
+        // Now, parse the string into the Products struct
+        let products = match serde_json::from_str::<RentHistoryProducts>(&products_str) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Failed to parse products JSON: {:?}", e);
+                continue; // Handle the error as needed
+            }
+        };
         response_body.histories.push(History{
             id: history.id,
-            products: history.products,
+            products,
             buy_date: history.buy_date
         })
     }

@@ -429,7 +429,7 @@ pub async fn sell(
                 let new_rent_history = rent_history::ActiveModel {
                     grand_total: Set(grant_total),
                     paid_amount: Set(user_data.paid_price),
-                    products: Set(serialized_data.into()),
+                    products: Set(serialized_data),
                     buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
                     rent_user_id: Set(user_data.id),
                     ..Default::default()
