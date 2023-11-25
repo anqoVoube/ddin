@@ -70,6 +70,7 @@ pub struct DebtUserBody{
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PayBody {
+    id: i32,
     paid_price: i32
 }
 
@@ -114,9 +115,10 @@ pub async fn update(
     Extension(database): Extension<DatabaseConnection>,
     Extension(ScyllaDBConnection {scylla}): Extension<ScyllaDBConnection>,
     Extension(Auth{user_id, business_id}): Extension<Auth>,
-    Path(id): Path<i32>,
-    Json(PayBody{paid_price}): Json<PayBody>
+    Json(PayBody{id, paid_price}): Json<PayBody>
 ) -> Response {
+    // TODO: auth check for security purposes
+
     match Rent::find_by_id(id).one(&database).await{
         Ok(Some(pear)) => {
             let mut pear: rent::ActiveModel = pear.into();
