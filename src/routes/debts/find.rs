@@ -78,11 +78,12 @@ pub async fn full_serializer_search(
             .unwrap();
     }
     let mut debts_schema = FullDebts{debts: vec![], next_page: true};
-    if debts.len() as i32 <= DEFAULT_PAGE_SIZE{
+    let debts_length = debts.len();
+    if debts_length as i32 <= DEFAULT_PAGE_SIZE{
         debts_schema.next_page = false;
     }
 
-    for debt in debts.drain(0..DEFAULT_PAGE_SIZE as usize){
+    for debt in debts.drain(0..std::cmp::min(DEFAULT_PAGE_SIZE as usize, debts_length)){
         debts_schema.debts.push(FullDebt{
             id: debt.id,
             name: debt.name,
