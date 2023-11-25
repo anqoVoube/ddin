@@ -68,6 +68,9 @@ pub async fn full_serializer_search(
             .unwrap();
     } else {
         debts = Rent::find()
+            .filter(
+                condition
+            )
             .offset(((query.page.unwrap_or(DEFAULT_PAGE) - 1) * query.page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
             .limit(query.page_size.unwrap_or(DEFAULT_PAGE_SIZE + 1) as u64)
             .all(&database)
