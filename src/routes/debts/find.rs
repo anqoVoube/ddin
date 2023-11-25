@@ -44,7 +44,8 @@ pub struct SmallDebts{
 
 #[derive(Serialize,  Deserialize, Debug)]
 pub struct FullDebts{
-    debts: Vec<FullDebt>
+    debts: Vec<FullDebt>,
+    next_page: bool
 }
 
 
@@ -68,14 +69,17 @@ pub async fn full_serializer_search(
     } else {
         debts = Rent::find()
             .offset(((query.page.unwrap_or(DEFAULT_PAGE) - 1) * query.page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
-            .limit(query.page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
+            .limit(query.page_size.unwrap_or(DEFAULT_PAGE_SIZE + 1) as u64)
             .all(&database)
             .await
             .unwrap();
     }
+    let mut debts_schema = FullDebts{debts: vec![], next_page: true};
+    if debts.len() as i32 <= DEFAULT_PAGE_SIZE{
+        debts_schema.next_page = false;
+    }
 
-    let mut debts_schema = FullDebts{debts: vec![]};
-    for debt in debts{
+    for debt in debts.drain(0..DEFAULT_PAGE_SIZE as usize){
         debts_schema.debts.push(FullDebt{
             id: debt.id,
             name: debt.name,
