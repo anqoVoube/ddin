@@ -419,17 +419,14 @@ pub async fn sell(
                     return internal_server_error();
                 }
 
-                let serialized_data = serde_json::to_string(&RentHistoryProducts{
-                    products: history_products,
-                    weight_items: history_weight_items,
-                    no_code_products: history_no_code_products,
-
-                }).unwrap();
-
                 let new_rent_history = rent_history::ActiveModel {
                     grand_total: Set(grant_total),
                     paid_amount: Set(user_data.paid_price),
-                    products: Set(serde_json::Value::String(serialized_data)),
+                    products: Set(json!(RentHistoryProducts{
+                    products: history_products,
+                    weight_items: history_weight_items,
+                    no_code_products: history_no_code_products,
+                })),
                     buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
                     rent_user_id: Set(user_data.id),
                     ..Default::default()
