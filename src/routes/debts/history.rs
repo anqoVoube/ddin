@@ -15,7 +15,7 @@ use crate::routes::sell::{ItemType, RentHistoryProducts};
 use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
 use axum::extract::Query;
 
-const DEFAULT_PAGE_SIZE: i32 = 15;
+const DEFAULT_PAGE_SIZE: i32 = 5;
 const DEFAULT_PAGE: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug)]
