@@ -1,7 +1,7 @@
 use axum::{debug_handler, Extension, Json};
 use axum::extract::Path;
 use http::StatusCode;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{DatabaseConnection, EntityTrait, QueryOrder};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -18,7 +18,8 @@ use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
 struct History{
     id: i32,
     purchase_products: DetailedHistory,
-    buy_date: DateTimeWithTimeZone
+    buy_date: DateTimeWithTimeZone,
+    grant_total: i32
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,6 +72,7 @@ pub async fn get_history(
         .filter(
             rent_history::Column::RentUserId.eq(id)
         )
+        .order_by_desc(rent_history::Column::BuyDate)
         .all(&database)
         .await
         .unwrap();
@@ -136,7 +138,8 @@ pub async fn get_history(
         response_body.histories.push(History{
             id: history.id,
             purchase_products: detailed_history,
-            buy_date: history.buy_date
+            buy_date: history.buy_date,
+            grant_total: history.grand_total
         })
     }
 

@@ -1,18 +1,21 @@
-use axum::{http::StatusCode, response::IntoResponse, debug_handler};
+use axum::{http::StatusCode, response::IntoResponse, debug_handler, Extension};
 
 use axum_extra::extract::Multipart;
 
 use std::{collections::HashMap, str, fs::File, io::Write, path::Path, fs};
-use std::sync::Mutex;
 use axum::response::Response;
+use log::{error, info};
 use uuid::Uuid;
 use once_cell::sync::Lazy;
-
-static GLOBAL_DATA: Lazy<Mutex<HashMap<i32, String>>> = Lazy::new(|| {
-    let mut m = HashMap::new();
-    m.insert(13, "Spica".to_string());
-    m.insert(74, "Hoyten".to_string());
-    Mutex::new(m)
+use sea_orm::{ActiveModelTrait, DatabaseConnection};
+use sea_orm::prelude::DateTimeWithTimeZone;
+use tokio::sync::Mutex;
+use crate::database::parent_product;
+use crate::routes::utils::{default_created, default_ok, internal_server_error};
+use sea_orm::ActiveValue::Set;
+static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
+    let mut global_count = 0;
+    Mutex::new(global_count)
 });
 
 
@@ -25,8 +28,11 @@ pub struct ObjectBody{
 
 #[debug_handler]
 pub async fn upload(
+    Extension(database): Extension<DatabaseConnection>,
     mut multipart: Multipart
 ) -> Response {
+    let mut global_count = GLOBAL_DATA.lock().await;
+    println!("{}", global_count);
     // let mut data = HashMap::new();
     let mut objects: HashMap<usize, ObjectBody> = HashMap::new();
     // let mut file_names: HashMap<String, String> = HashMap::new();
@@ -37,13 +43,15 @@ pub async fn upload(
 
         if name.ends_with("photo") {
             // Generate a unique filename for the image
-            let filename = format!("{}.jpg", object.title.clone().unwrap());
-
-            if let Ok(_) = fs::create_dir_all("/some/dir"){
+            // title won't be null as it will be send before the photo
+            let filename = format!("{}", process_title(&object.title.clone().unwrap()));
+            let filename_with_format = format!("{}.jpg", filename);
+            let dir_path = format!("media/images/{}", *global_count / 50);
+            if let Ok(_) = fs::create_dir_all(&dir_path){
                 println!("Created directory")
             }
             // Specify the directory where the file will be saved
-            let filepath = Path::new("").join(filename.clone());
+            let filepath = Path::new(&dir_path).join(filename.clone());
 
             // Get the image data
             let file_data = field.bytes().await.unwrap();
@@ -51,7 +59,7 @@ pub async fn upload(
             // Save the file
             let mut file = File::create(filepath).unwrap();
             file.write_all(&file_data).unwrap();
-            object.file = Some(filename);
+            object.file = Some(filename_with_format);
 
         } else  {
             let bytes = field.bytes().await.unwrap();
@@ -63,8 +71,30 @@ pub async fn upload(
             }
         }
     }
+    *global_count += 1;
 
-    (StatusCode::OK).into_response()
+    for object in objects.values(){
+        let new_parent_product = parent_product::ActiveModel {
+            title: Set(object.title.clone().unwrap()),
+            code: Set(object.code.clone().unwrap()),
+            description: Set("hello".to_string()),
+            main_image: Set(object.file.clone()),
+            images: Set(vec!()),
+            ..Default::default()
+        };
+
+        match new_parent_product.save(&database).await{
+            Ok(instance) => {
+                info!("{:?}", instance);
+            },
+            Err(error) => {
+                error!("Unable to create {:?}. Original error was {}", 1, error);
+                internal_server_error()
+            }
+        }
+    }
+
+    default_ok()
 }
 
 pub fn process_title(title: &str) -> String{
