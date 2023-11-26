@@ -39,7 +39,6 @@ pub struct ParentProductBody {
 pub struct NoCodeProductBody {
     id: i32,
     quantity: i32,
-    sell_price: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -422,11 +421,15 @@ pub async fn sell(
                 let new_rent_history = rent_history::ActiveModel {
                     grand_total: Set(grant_total),
                     paid_amount: Set(user_data.paid_price),
-                    products: Set(json!(RentHistoryProducts{
-                    products: history_products,
-                    weight_items: history_weight_items,
-                    no_code_products: history_no_code_products,
-                })),
+                    products: Set(
+                        json!(
+                            RentHistoryProducts{
+                                products: history_products,
+                                weight_items: history_weight_items,
+                                no_code_products: history_no_code_products,
+                            }
+                        )
+                    ),
                     buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
                     rent_user_id: Set(user_data.id),
                     ..Default::default()
