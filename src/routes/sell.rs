@@ -29,9 +29,9 @@ pub struct ProductBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParentProductBody {
-    parent_id: i32,
-    quantity: i32,
-    sell_price: i32
+    pub parent_id: i32,
+    pub quantity: i32,
+    pub sell_price: i32
 }
 
 
@@ -44,9 +44,9 @@ pub struct NoCodeProductBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParentNoCodeProductBody {
-    parent_id: i32,
-    quantity: i32,
-    sell_price: i32
+    pub parent_id: i32,
+    pub quantity: i32,
+    pub sell_price: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,9 +57,9 @@ pub struct WeightItemBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParentWeightItemBody {
-    parent_id: i32,
-    kg_weight: f64,
-    sell_price: i32
+    pub parent_id: i32,
+    pub kg_weight: f64,
+    pub sell_price: i32
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -78,9 +78,9 @@ pub struct SellBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RentHistoryProducts{
-    weight_items: Vec<ParentWeightItemBody>,
-    products: Vec<ParentProductBody>,
-    no_code_products: Vec<ParentNoCodeProductBody>,
+    pub weight_items: Vec<ParentWeightItemBody>,
+    pub products: Vec<ParentProductBody>,
+    pub no_code_products: Vec<ParentNoCodeProductBody>,
 }
 
 pub enum ItemType{

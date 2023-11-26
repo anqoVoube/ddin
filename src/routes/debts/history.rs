@@ -11,14 +11,49 @@ use crate::database::rent_history;
 use axum::response::{IntoResponse, Response};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
-use crate::routes::sell::RentHistoryProducts;
+use crate::routes::sell::{ItemType, RentHistoryProducts};
+use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct History{
     id: i32,
-    products: RentHistoryProducts,
+    purchase_products: DetailedHistory,
     buy_date: DateTimeWithTimeZone
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+struct DetailedProduct{
+    id: i32,
+    title: String,
+    main_image: Option<String>,
+    quantity: i32,
+    sell_price: i32
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct DetailedWeightItem{
+    id: i32,
+    title: String,
+    main_image: Option<String>,
+    kg_weight: f64,
+    sell_price: i32
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct DetailedNoCodeProduct{
+    id: i32,
+    title: String,
+    main_image: Option<String>,
+    quantity: i32,
+    sell_price: i32
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct DetailedHistory{
+    products: Vec<DetailedProduct>,
+    weight_items: Vec<DetailedWeightItem>,
+    no_code_products: Vec<DetailedNoCodeProduct>
+}
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Histories{
@@ -52,9 +87,55 @@ pub async fn get_history(
                 continue; // Handle the error as needed
             }
         };
+
+        let mut detail_products: Vec<DetailedProduct> = vec![];
+        for product in products.products{
+            if let Ok(Parent::Product(parent_product)) = get_parent_by_id(&database, product.parent_id, ItemType::Product).await{
+                detail_products.push(DetailedProduct{
+                    id: parent_product.id,
+                    title: parent_product.title,
+                    main_image: parent_product.main_image,
+                    quantity: product.quantity,
+                    sell_price: product.sell_price
+                })
+            }
+        }
+
+        let mut detail_weight_items: Vec<DetailedWeightItem> = vec![];
+        for product in products.weight_items{
+            if let Ok(Parent::WeightItem(parent_product)) = get_parent_by_id(&database, product.parent_id, ItemType::WeightItem).await{
+                detail_weight_items.push(DetailedWeightItem{
+                    id: parent_product.id,
+                    title: parent_product.title,
+                    main_image: parent_product.main_image,
+                    kg_weight: product.kg_weight,
+                    sell_price: product.sell_price
+                })
+            }
+        }
+
+        let mut detail_no_code_products: Vec<DetailedNoCodeProduct> = vec![];
+        for product in products.no_code_products{
+            if let Ok(Parent::WeightItem(parent_product)) = get_parent_by_id(&database, product.parent_id, ItemType::WeightItem).await{
+                detail_no_code_products.push(DetailedNoCodeProduct{
+                    id: parent_product.id,
+                    title: parent_product.title,
+                    main_image: parent_product.main_image,
+                    quantity: product.quantity,
+                    sell_price: product.sell_price
+                })
+            }
+        }
+
+        let detailed_history = DetailedHistory{
+            products: detail_products,
+            weight_items: detail_weight_items,
+            no_code_products: detail_no_code_products
+        };
+
         response_body.histories.push(History{
             id: history.id,
-            products,
+            purchase_products: detailed_history,
             buy_date: history.buy_date
         })
     }
