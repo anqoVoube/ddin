@@ -1,7 +1,7 @@
 use axum::{debug_handler, Extension, Json};
 use axum::extract::Path;
 use http::StatusCode;
-use sea_orm::{DatabaseConnection, EntityTrait, QueryOrder};
+use sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -13,6 +13,10 @@ use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use crate::routes::sell::{ItemType, RentHistoryProducts};
 use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
+use axum::extract::Query;
+
+const DEFAULT_PAGE_SIZE: i32 = 15;
+const DEFAULT_PAGE: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct History{
@@ -61,11 +65,17 @@ struct Histories{
     histories: Vec<History>
 }
 
+struct Pagination{
+    page: Option<i32>,
+    page_size: Option<i32>
+}
+
 #[debug_handler]
 pub async fn get_history(
     Extension(Auth{user_id, business_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
-    Path(id): Path<i32>
+    Path(id): Path<i32>,
+    Query(Pagination{page, page_size}): Query<Pagination>
 ) -> Response{
     // ToDo: Check RentUser for business_id for security purposes
     let histories = RentHistory::find()
@@ -73,6 +83,8 @@ pub async fn get_history(
             rent_history::Column::RentUserId.eq(id)
         )
         .order_by_desc(rent_history::Column::BuyDate)
+        .offset(((page.unwrap_or(DEFAULT_PAGE) - 1) * page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
+        .limit(page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
         .all(&database)
         .await
         .unwrap();
