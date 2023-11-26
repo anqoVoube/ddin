@@ -65,7 +65,9 @@ struct Histories{
     histories: Vec<History>
 }
 
-struct Pagination{
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Pagination{
     page: Option<i32>,
     page_size: Option<i32>
 }
