@@ -29,6 +29,7 @@ use scylla::Session;
 use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
+use tower_http::cors::{Any, CorsLayer};
 use crate::core::auth::middleware::{Auth, auth_getter};
 use crate::RedisPool;
 use crate::routes::business::create::create;
@@ -58,7 +59,7 @@ pub struct ScyllaDBConnection {
 
 
 pub fn v1_routes(connections: AppConnections) -> Router{
-
+    let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
@@ -66,6 +67,9 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))
         .route("/debts/payment", post(debts::update::update))
         .route("/debts/history/:id", get(debts::history::get_history))
+
+        .route("/add-parent/weight-item", post(parent_weight_item::create::upload))
+        .route("/add-parent/no-code-product", post(parent_no_code_product::create::upload))
 
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
@@ -78,6 +82,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
         .layer(DefaultBodyLimit::max(1024 * 1024 * 2000))
         .nest("/user/", user_router())
+        .layer(cors)
 }
 
 
