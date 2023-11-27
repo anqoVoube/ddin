@@ -1,20 +1,18 @@
-use axum::{http::StatusCode, response::IntoResponse, debug_handler, Extension};
+use axum::{ debug_handler, Extension};
 
 use axum_extra::extract::Multipart;
 
 use std::{collections::HashMap, str, fs::File, io::Write, path::Path, fs};
 use axum::response::Response;
 use log::{error, info};
-use uuid::Uuid;
 use once_cell::sync::Lazy;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
-use sea_orm::prelude::DateTimeWithTimeZone;
 use tokio::sync::Mutex;
 use crate::database::parent_product;
-use crate::routes::utils::{default_created, default_ok, internal_server_error};
+use crate::routes::utils::{default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
 static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
-    let mut global_count = 0;
+    let global_count = 0;
     Mutex::new(global_count)
 });
 
