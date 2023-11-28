@@ -81,7 +81,7 @@ pub enum Types{
     Year
 }
 
-pub async fn get_date_range(r#type: Types, prev: u8) -> (NaiveDate, NaiveDate, Vec<String>){
+pub fn get_date_range(r#type: &Types, prev: u8) -> (NaiveDate, NaiveDate, Vec<String>){
     let current_date = Utc::now();
 
     let (start_date, end_date, namings) = match r#type{
@@ -122,6 +122,8 @@ pub async fn get_date_range(r#type: Types, prev: u8) -> (NaiveDate, NaiveDate, V
             )
         }
     };
+
+    (start_date, end_date, namings)
 }
 
 

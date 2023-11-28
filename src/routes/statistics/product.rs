@@ -10,7 +10,7 @@ pub async fn get_product_stats(
     r#type: Types,
     prev: u8
 ){
-    let (start_date, end_date, namings) = get_date_range(r#type, prev);
+    let (start_date, end_date, namings) = get_date_range(&r#type, prev);
     let query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND date >= ? AND date <= ? AND item_type = ? ALLOW FILTERING";
 
     let results = scylla.query(

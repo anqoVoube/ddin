@@ -101,7 +101,7 @@ pub async fn full(
 
     let current_date = Utc::now();
 
-    let (start_date, end_date, namings) = get_date_range(r#type, prev);
+    let (start_date, end_date, namings) = get_date_range(&r#type, prev);
 
 
     let query = "SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 3) GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
