@@ -13,17 +13,8 @@ use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
 use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
+use crate::routes::statistics::{get_date_range, Types};
 
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub enum Types{
-    #[serde(rename = "W")]
-    Week,
-    #[serde(rename = "M")]
-    Month,
-    #[serde(rename = "Y")]
-    Year
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct Search {
@@ -110,44 +101,8 @@ pub async fn full(
 
     let current_date = Utc::now();
 
-    let (start_date, end_date, namings) = match r#type{
-        Types::Week => {
-            let days_number_from_monday = current_date.weekday().number_from_monday();
-            (
-                (current_date + chrono::Duration::days((1 - days_number_from_monday as i32 - (7 * prev) as i32) as i64)).naive_utc().date(),
-                (current_date + chrono::Duration::days((7 - days_number_from_monday as i32 - (7 * prev) as i32) as i64)).naive_utc().date(),
-                week_vector()
-            )
+    let (start_date, end_date, namings) = get_date_range(r#type, prev);
 
-        },
-        Types::Month => {
-            current_date.naive_utc().date().days_in_month();
-            if prev % 12 > (current_date.month() - 1) as u8{
-                let working_date = NaiveDate::from_ymd_opt(current_date.year() - (prev / 12) as i32 - 1, 13 - ((prev % 12) - current_date.month() as u8 + 1) as u32, 1).expect("Couldn't convert date");
-                (
-                    working_date,
-                    NaiveDate::from_ymd_opt(working_date.year(), working_date.month(), working_date.days_in_month()).expect("Couldn't convert date"),
-                    create_vector(1, working_date.days_in_month())
-                )
-            } else {
-                let working_date = NaiveDate::from_ymd_opt(current_date.year() - (prev / 12) as i32, current_date.month() - (prev % 12) as u32, 1).expect("Couldn't convert date");
-                (
-                    working_date,
-                    NaiveDate::from_ymd_opt(working_date.year(), working_date.month(), working_date.days_in_month()).expect("Couldn't convert date"),
-                    create_vector(1, working_date.days_in_month())
-                )
-
-            }
-        },
-        Types::Year => {
-            let working_date = NaiveDate::from_ymd_opt(current_date.year() - prev as i32, 1, 1).expect("Couldn't convert date");
-            (
-                working_date,
-                NaiveDate::from_ymd_opt(working_date.year(), 12, 31).expect("Couldn't convert date"),
-                month_vector()
-            )
-        }
-    };
 
     let query = "SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 3) GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
 
