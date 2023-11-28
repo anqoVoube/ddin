@@ -33,6 +33,7 @@ pub async fn login(
     cookies: Cookies,
     Json(Body{ phone_number}): Json<Body>,
 ) -> Response {
+    println!("LOGIN");
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
     }
