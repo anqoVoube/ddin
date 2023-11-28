@@ -23,6 +23,7 @@ use axum::response::IntoResponse;
 
 
 use axum::routing::{get, post, put};
+use axum::http::Method;
 use redis::aio::Connection;
 
 use scylla::Session;
@@ -59,7 +60,7 @@ pub struct ScyllaDBConnection {
 
 
 pub fn v1_routes(connections: AppConnections) -> Router{
-    let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
+    let cors = CorsLayer::new().allow_methods([Method::POST, Method::GET]).allow_origin(Any);
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
