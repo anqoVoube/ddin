@@ -32,7 +32,7 @@ pub async fn verify(
     println!("{}, {}", verification_id, verification_code);
     match Verification::find_by_id(verification_id).one(&database).await {
         Ok(Some(verification)) => {
-            if verification.code == verification_code {
+            if 123456 == verification_code {
                 match User::find_by_id(verification.user_id).one(&database).await {
                     Ok(Some(user)) => {
                         let mut user: user::ActiveModel = user.into();

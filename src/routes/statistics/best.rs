@@ -13,14 +13,8 @@ use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
 use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
-use crate::routes::statistics::{get_date_range, Types};
+use crate::routes::statistics::{get_date_range, Search, Types};
 
-
-#[derive(Deserialize, Serialize)]
-pub struct Search {
-    r#type: Types,
-    prev: u8
-}
 
 trait NaiveDateExt {
     fn days_in_month(&self) -> u32;
