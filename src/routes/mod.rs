@@ -4,6 +4,8 @@ mod parent_product;
 mod product;
 pub mod utils;
 mod ping;
+mod update;
+mod expiration;
 
 mod weight_item;
 pub mod find;
@@ -67,7 +69,8 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
-
+        .route("/expirations", get(expiration::get_expirations))
+        .route("/update", post(update::update_product))
         .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))
         .route("/debts/payment", post(debts::update::update))
         .route("/debts/history/:id", get(debts::history::get_history))

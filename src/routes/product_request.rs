@@ -20,6 +20,7 @@ static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
 #[derive(Debug, Default)]
 pub struct ObjectBody{
     title: Option<String>,
+    expiration_in_days: Option<i32>,
     code: Option<String>,
     file: Option<String>
 }
@@ -43,7 +44,6 @@ pub async fn upload(
             // Generate a unique filename for the image
             // title won't be null as it will be send before the photo
             let filename = format!("{}", process_title(&object.title.clone().unwrap()));
-            let filename_with_format = format!("{}.jpg", filename);
             let dir_path = format!("media/images/{}", *global_count / 50);
             if let Ok(_) = fs::create_dir_all(&dir_path){
                 println!("Created directory")
@@ -57,15 +57,18 @@ pub async fn upload(
             // Save the file
             let mut file = File::create(filepath).unwrap();
             file.write_all(&file_data).unwrap();
-            object.file = Some(filename_with_format);
+            object.file = Some(filename);
 
         } else  {
             let bytes = field.bytes().await.unwrap();
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
             if name.ends_with("title"){
                 object.title = Some(text_data);
+            } else if name.ends_with("expiration_in_days"){
+                println!("{}", text_data);
+                object.expiration_in_days = Some(text_data.parse::<i32>().unwrap());
             } else {
-                object.code = Some(text_data);
+                object.code = Some(text_data)
             }
         }
     }
@@ -78,6 +81,7 @@ pub async fn upload(
             description: Set("hello".to_string()),
             main_image: Set(object.file.clone()),
             images: Set(vec!()),
+            expiration_in_days: Set(object.expiration_in_days.unwrap()),
             ..Default::default()
         };
 

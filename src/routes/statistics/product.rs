@@ -82,17 +82,21 @@ pub async fn get_product_stats(
     for row in results.rows.ok_or("Unable to fetch rows")?.into_typed::<(NaiveDate, i32, i32)>() {
         if let Ok(result) = row{
             let (date, quantity, profit) = result;
+            println!("{} {} {}", date, quantity, profit);
             profit_by_date.entry(date).or_insert([0, 0]);
-            let mut one_stats = profit_by_date[&date];
-            one_stats[0] += quantity;
-            one_stats[1] += profit;
+            if let Some(one_stats) = profit_by_date.get_mut(&date) {
+                one_stats[0] += quantity;
+                one_stats[1] += profit;
+            }
         }
     }
 
+    println!("{:?}", profit_by_date);
     let mut quantities: Vec<i32> = (0..namings.len()).map(|_| 0).collect();
     let mut profits: Vec<i32> = (0..namings.len()).map(|_| 0).collect();
     for (date, total_stats) in profit_by_date {
         let [total_quantity, total_profit] = total_stats;
+        println!("{} {}", total_quantity, total_profit);
         println!("DATE!!! {}", date);
         match r#type{
             Types::Year => {

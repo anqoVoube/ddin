@@ -104,14 +104,14 @@ pub async fn find_product(search: String, business_id: i32, database: &DatabaseC
     };
 
     for (product, vec_parent_product) in products {
-        let parent_weight_item = vec_parent_product.first().unwrap();
+        let parent_product = vec_parent_product.first().unwrap();
         let product = ProductSchema {
             id: product.id,
-            title: parent_weight_item.title.clone(),
+            title: parent_product.title.clone(),
             price: product.price,
             max_quantity: product.quantity,
             expiration_date: product.expiration_date,
-            main_image: parent_weight_item.main_image.clone()
+            main_image: parent_product.main_image.clone()
         };
 
         response_body.products.push(product);
