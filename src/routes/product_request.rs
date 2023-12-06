@@ -64,7 +64,7 @@ pub async fn upload(
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
             if name.ends_with("title"){
                 object.title = Some(text_data);
-            } else if name.ends_with("expiration_in_days"){
+            } else if name.ends_with("expiration"){
                 println!("{}", text_data);
                 object.expiration_in_days = Some(text_data.parse::<i32>().unwrap());
             } else {
