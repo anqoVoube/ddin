@@ -34,7 +34,8 @@ pub async fn upload(
     println!("{}", global_count);
     // let mut data = HashMap::new();
     let mut objects: HashMap<usize, ObjectBody> = HashMap::new();
-    // let mut file_names: HashMap<String, String> = HashMap::new();
+    let mut generated_names: HashMap<usize, String> = HashMap::new();
+    let mut orig_names: HashMap<usize, String> = HashMap::new();
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
         let count = name.split("_").collect::<Vec<&str>>().first().unwrap().parse::<usize>().unwrap();
@@ -43,11 +44,22 @@ pub async fn upload(
         if name.ends_with("photo") {
             // Generate a unique filename for the image
             // title won't be null as it will be send before the photo
-            let filename = format!("{}", process_title(&object.title.clone().unwrap()));
+            uuid::Uuid::new_v4().to_string();
+            let filename: String = match &object.title.clone(){
+                Some(title) => {
+                    format!("{}", process_title(title))
+                },
+                None => {
+                    let generated_name = uuid::Uuid::new_v4().to_string();
+                    generated_names.insert(count, generated_name.clone());
+                    format!("{}.jpg", generated_name)
+                }
+            };
             let dir_path = format!("media/images/{}", *global_count / 50);
             if let Ok(_) = fs::create_dir_all(&dir_path){
                 println!("Created directory")
             }
+
             // Specify the directory where the file will be saved
             let filepath = Path::new(&dir_path).join(filename.clone());
 
@@ -63,6 +75,7 @@ pub async fn upload(
             let bytes = field.bytes().await.unwrap();
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
             if name.ends_with("title"){
+                orig_names.insert(count, text_data.clone());
                 object.title = Some(text_data);
             } else if name.ends_with("expiration"){
                 println!("{}", text_data);
@@ -73,6 +86,22 @@ pub async fn upload(
         }
     }
     *global_count += 1;
+
+
+    for (obj_count, gen_name) in generated_names.iter(){
+        fs::rename(
+            format!(
+                "media/images/{}/{}.jpg",
+                *global_count / 50,
+                gen_name
+            ),
+            format!(
+                "media/images/{}/{}",
+                *global_count / 50,
+                process_title(orig_names.get(obj_count).unwrap())
+            )
+        ).unwrap();
+    }
 
     println!("{:?}", objects);
     for object in objects.values(){
