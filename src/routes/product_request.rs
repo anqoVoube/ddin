@@ -74,7 +74,9 @@ pub async fn upload(
     }
     *global_count += 1;
 
+    println!("{:?}", objects);
     for object in objects.values(){
+        println!("creating");
         let new_parent_product = parent_product::ActiveModel {
             title: Set(object.title.clone().unwrap()),
             code: Set(object.code.clone().unwrap()),
