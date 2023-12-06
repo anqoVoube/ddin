@@ -17,6 +17,8 @@ static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
 });
 
 
+const FILE_COUNT: i32 = 50;
+
 #[derive(Debug, Default)]
 pub struct ObjectBody{
     title: Option<String>,
@@ -36,9 +38,14 @@ pub async fn upload(
     let mut objects: HashMap<usize, ObjectBody> = HashMap::new();
     let mut generated_names: HashMap<usize, String> = HashMap::new();
     let mut orig_names: HashMap<usize, String> = HashMap::new();
+    let mut max_count: usize = 0;
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
         let count = name.split("_").collect::<Vec<&str>>().first().unwrap().parse::<usize>().unwrap();
+        max_count = max_count.max(count);
+        if objects.get(&count).is_none(){
+            *global_count += 1;
+        }
         let mut object = objects.entry(count).or_insert(ObjectBody{..Default::default()});
 
         if name.ends_with("photo") {
@@ -55,7 +62,7 @@ pub async fn upload(
                     format!("{}.jpg", generated_name)
                 }
             };
-            let dir_path = format!("media/images/{}", *global_count / 50);
+            let dir_path = format!("media/images/{}", (*global_count - 1) / FILE_COUNT);
             if let Ok(_) = fs::create_dir_all(&dir_path){
                 println!("Created directory")
             }
@@ -69,14 +76,15 @@ pub async fn upload(
             // Save the file
             let mut file = File::create(filepath).unwrap();
             file.write_all(&file_data).unwrap();
-            object.file = Some(filename);
 
         } else  {
             let bytes = field.bytes().await.unwrap();
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
             if name.ends_with("title"){
                 orig_names.insert(count, text_data.clone());
+                object.file = Some(process_title(&text_data));
                 object.title = Some(text_data);
+
             } else if name.ends_with("expiration"){
                 println!("{}", text_data);
                 object.expiration_in_days = Some(text_data.parse::<i32>().unwrap());
@@ -85,19 +93,21 @@ pub async fn upload(
             }
         }
     }
-    *global_count += 1;
 
+    println!("Global: {}", global_count);
 
     for (obj_count, gen_name) in generated_names.iter(){
+        println!("{} {}", obj_count, gen_name);
+        let folder_name = (*global_count - max_count as i32 + *obj_count as i32 - 1) / FILE_COUNT;
         fs::rename(
             format!(
                 "media/images/{}/{}.jpg",
-                *global_count / 50,
+                folder_name,
                 gen_name
             ),
             format!(
                 "media/images/{}/{}",
-                *global_count / 50,
+                folder_name,
                 process_title(orig_names.get(obj_count).unwrap())
             )
         ).unwrap();
