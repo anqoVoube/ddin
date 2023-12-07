@@ -1,6 +1,6 @@
 use axum::{debug_handler, Extension, Json};
 use serde::{Serialize, Deserialize};
-use sea_orm::{DatabaseConnection, EntityTrait, ActiveValue::Set};
+use sea_orm::{DatabaseConnection, EntityTrait, ActiveValue::Set, ActiveModelTrait};
 use axum::response::{IntoResponse, Response};
 use log::error;
 use crate::database::prelude::{NoCodeProduct, Product, WeightItem};
@@ -34,6 +34,18 @@ pub async fn update_product(
                     if quantity.is_some(){
                         product.quantity = Set(quantity.unwrap());
                     }
+
+                    match product.update(&database).await{
+                        Ok(_) => {
+                            // todo! create session
+                            println!("verification created");
+                            return default_ok();
+                        },
+                        Err(err) => {
+                            println!("{}", err);
+                            return internal_server_error();
+                        }
+                    }
                 },
 
                 Ok(None) => {
@@ -54,6 +66,17 @@ pub async fn update_product(
                     }
                     if kg_weight.is_some(){
                         weight_item.kg_weight = Set(kg_weight.unwrap());
+                    }
+                    match weight_item.update(&database).await{
+                        Ok(_) => {
+                            // todo! create session
+                            println!("verification created");
+                            return default_ok();
+                        },
+                        Err(err) => {
+                            println!("{}", err);
+                            return internal_server_error();
+                        }
                     }
                 },
 
@@ -76,6 +99,18 @@ pub async fn update_product(
                     if quantity.is_some(){
                         no_code_product.quantity = Set(quantity.unwrap());
                     }
+
+                    match no_code_product.update(&database).await{
+                        Ok(_) => {
+                            // todo! create session
+                            println!("verification created");
+                            return default_ok();
+                        },
+                        Err(err) => {
+                            println!("{}", err);
+                            return internal_server_error();
+                        }
+                    }
                 },
 
                 Ok(None) => {
@@ -91,5 +126,4 @@ pub async fn update_product(
             return internal_server_error();
         }
     }
-    default_ok()
 }
