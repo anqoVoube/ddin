@@ -25,7 +25,8 @@ use axum::response::IntoResponse;
 
 
 use axum::routing::{get, post, put};
-use axum::http::Method;
+use axum::http::{Method, header};
+use http::HeaderName;
 use redis::aio::Connection;
 
 use scylla::Session;
@@ -65,7 +66,12 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET])
         .allow_origin(Any)
-        .allow_headers(Any)
+        .allow_headers(vec![
+            header::AUTHORIZATION,
+            header::ACCEPT,
+            header::CONTENT_TYPE,
+            HeaderName::from_lowercase(b"x-business-id").unwrap(),
+        ])
         .allow_credentials(true);
 
     Router::new()
