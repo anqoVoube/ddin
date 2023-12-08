@@ -67,6 +67,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .allow_origin(Any)
         .allow_headers(Any)
         .allow_credentials(true);
+
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
