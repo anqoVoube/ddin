@@ -71,8 +71,8 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             header::ACCEPT,
             header::CONTENT_TYPE,
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
-        ])
-        .allow_credentials(true);
+        ]);
+        // .allow_credentials(true);
 
     Router::new()
         .route("/ping", get(ping))
