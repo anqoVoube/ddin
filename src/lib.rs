@@ -8,7 +8,11 @@ use scylla::{IntoTypedRows, Session, SessionBuilder, SessionConfig};
 use redis::aio::Connection;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use routes::create_routes;
-
+use mongodb::{
+    bson::{Document, doc},
+    Client,
+    Collection
+};
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
 pub async fn init_db(database_uri: &str) -> DatabaseConnection{
@@ -83,7 +87,13 @@ pub async fn init_scylla(scylla_url: &str) -> Session{
     session
 }
 
-pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, running_port: &str){
+
+pub async fn init_mongo(mongo_uri: &str) -> mongodb::Database{
+    let client = Client::with_uri_str(mongo_uri).await.expect("Failed to create MongoDB client");
+    client.database("history")
+}
+
+pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, mongo_uri: &str, running_port: &str){
     let database = init_db(database_uri).await;
     let redis = init_redis(redis_uri).await;
     let scylla = init_scylla(scylla_uri).await;

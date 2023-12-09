@@ -40,6 +40,7 @@ pub struct Search {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProductSchema{
     id: i32,
+    parent_id: i32,
     title: String,
     price: i32,
     main_image: Option<String>,
@@ -56,6 +57,7 @@ pub struct ProductsSchema{
 #[derive(Serialize,  Deserialize, Debug)]
 pub struct WeightItemSchema{
     id: i32,
+    parent_id: i32,
     title: String,
     price: i32,
     main_image: Option<String>,
@@ -73,6 +75,7 @@ pub struct WeightItemsSchema{
 
 pub struct NoCodeProductSchema{
     id: i32,
+    parent_id: i32,
     title: String,
     price: i32,
     main_image: Option<String>,
@@ -107,6 +110,7 @@ pub async fn find_product(search: String, business_id: i32, database: &DatabaseC
         let parent_product = vec_parent_product.first().unwrap();
         let product = ProductSchema {
             id: product.id,
+            parent_id: product.parent_id,
             title: parent_product.title.clone(),
             price: product.price,
             max_quantity: product.quantity,
@@ -150,6 +154,7 @@ pub async fn find_weight_item(
         let parent_weight_item = vec_parent_weight_item.first().unwrap();
         let weight_item_body = WeightItemSchema {
             id: weight_item.id,
+            parent_id: weight_item.parent_id,
             title: parent_weight_item.title.clone(),
             price: weight_item.price,
             max_kg_weight: weight_item.kg_weight,
@@ -192,6 +197,7 @@ pub async fn find_no_code_product(
         let parent = vec_parent.first().unwrap();
         let no_code_product = NoCodeProductSchema {
             id: product.id,
+            parent_id: product.parent_id,
             title: parent.title.clone(),
             price: product.price,
             max_quantity: product.quantity,
