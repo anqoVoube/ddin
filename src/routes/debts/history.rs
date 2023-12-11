@@ -11,7 +11,7 @@ use crate::database::rent_history;
 use axum::response::{IntoResponse, Response};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
-use crate::routes::sell::{ItemType, RentHistoryProducts};
+use crate::routes::sell::{ItemType, History as RentHistoryProducts};
 use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
 use axum::extract::Query;
 

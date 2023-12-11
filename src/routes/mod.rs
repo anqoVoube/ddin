@@ -27,6 +27,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
 use axum::http::{Method, header};
 use http::HeaderName;
+use mongodb::{Collection, Database};
 use redis::aio::Connection;
 
 use scylla::Session;
@@ -101,7 +102,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 }
 
 
-pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Session) -> Router<(), Body> {
+pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Session, mongo: Database) -> Router<(), Body> {
     let connections = AppConnections{redis: redis.clone(), database: database.clone()};
     let scylla_connection = ScyllaDBConnection{
         scylla: Arc::new(scylla)
@@ -112,5 +113,6 @@ pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Ses
         .layer(Extension(redis))
         .layer(Extension(database))
         .layer(Extension(scylla_connection))
+        .layer(Extension(mongo))
         .layer(CookieManagerLayer::new())
 }

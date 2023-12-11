@@ -3,6 +3,7 @@ use axum::{Extension, Json, debug_handler};
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use log::{error, info};
+use mongodb::Database;
 use scylla::{IntoTypedRows, Session};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -76,7 +77,7 @@ pub struct SellBody {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RentHistoryProducts{
+pub struct History{
     pub weight_items: Vec<ParentWeightItemBody>,
     pub products: Vec<ParentProductBody>,
     pub no_code_products: Vec<ParentNoCodeProductBody>,
@@ -115,10 +116,12 @@ impl EnumValue for ItemType{
 pub async fn sell(
     Extension(database): Extension<DatabaseConnection>,
     Extension(ScyllaDBConnection {scylla}): Extension<ScyllaDBConnection>,
+    Extension(mongo): Extension<Database>,
     Extension(Auth{user_id, business_id}): Extension<Auth>,
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);
+    let history_collection = mongo.collection::<History>("history");
     let mut history_products: Vec<ParentProductBody> = vec!();
     let mut history_weight_items: Vec<ParentWeightItemBody> = vec!();
     let mut history_no_code_products: Vec<ParentNoCodeProductBody> = vec!();
@@ -406,6 +409,12 @@ pub async fn sell(
         };
     }
 
+    let history = History{
+        products: history_products,
+        weight_items: history_weight_items,
+        no_code_products: history_no_code_products,
+    };
+
     if let Some(user_data) = sell.debt_user {
         match Rent::find_by_id(user_data.id).one(&database).await{
             Ok(Some(pear)) => {
@@ -423,11 +432,7 @@ pub async fn sell(
                     paid_amount: Set(user_data.paid_price),
                     products: Set(
                         json!(
-                            RentHistoryProducts{
-                                products: history_products,
-                                weight_items: history_weight_items,
-                                no_code_products: history_no_code_products,
-                            }
+                            history
                         )
                     ),
                     buy_date: Set(DateTimeWithTimeZone::from(chrono::Utc::now())),
@@ -455,6 +460,11 @@ pub async fn sell(
             }
         }
     }
+
+    history_collection.insert_one(
+        history,
+        None
+    ).await.expect("Failed to insert history");
 
     default_ok()
 }

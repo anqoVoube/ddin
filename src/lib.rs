@@ -4,15 +4,14 @@ mod database;
 mod core;
 
 use log::error;
-use scylla::{IntoTypedRows, Session, SessionBuilder, SessionConfig};
-use redis::aio::Connection;
+use scylla::{IntoTypedRows, Session, SessionBuilder};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use routes::create_routes;
 use mongodb::{
-    bson::{Document, doc},
     Client,
-    Collection
 };
+
+
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
 pub async fn init_db(database_uri: &str) -> DatabaseConnection{
@@ -97,7 +96,8 @@ pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, mongo_ur
     let database = init_db(database_uri).await;
     let redis = init_redis(redis_uri).await;
     let scylla = init_scylla(scylla_uri).await;
-    let app = create_routes(database, redis, scylla);
+    let mongo = init_mongo(mongo_uri).await;
+    let app = create_routes(database, redis, scylla, mongo);
     let url = format!("0.0.0.0:{}", running_port);
     axum::Server::bind(&url.parse().unwrap())
         .serve(app.into_make_service())
