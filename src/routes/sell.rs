@@ -361,7 +361,7 @@ pub async fn sell(
                                 let new_profit = current_profit + (no_code_product_instance.quantity * profit);
                                 let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                                 scylla
-                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
+                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
                                     .await.unwrap();
                             },
                             None => {
