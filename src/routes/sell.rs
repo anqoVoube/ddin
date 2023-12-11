@@ -358,7 +358,7 @@ pub async fn sell(
                             Some(row) => {
                                 let (current_quantity, current_profit) = row.expect("couldn't parse");
                                 let new_quantity = current_quantity + no_code_product_instance.quantity;
-                                let new_profit = current_profit + (no_code_product_instance.quantity * profit as f64) as i32;
+                                let new_profit = current_profit + (no_code_product_instance.quantity * profit);
                                 let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                                 scylla
                                     .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
