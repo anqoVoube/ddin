@@ -349,18 +349,19 @@ pub async fn sell(
                         return internal_server_error();
                     } else {
                         let current_date = Utc::now().naive_utc().date();
-                        let select_query = "SELECT quantity FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
+                        let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                         let result = scylla
                             .query(select_query, (parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
                             .await.unwrap();
 
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
+                        match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
                             Some(row) => {
-                                let (current_quantity, ) = row.expect("couldn't parse");
+                                let (current_quantity, current_profit) = row.expect("couldn't parse");
                                 let new_quantity = current_quantity + no_code_product_instance.quantity;
-                                let update_query = "UPDATE statistics.products SET quantity = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
+                                let new_profit = current_profit + (no_code_product_instance.quantity * profit as f64) as i32;
+                                let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
                                 scylla
-                                    .query(update_query, (new_quantity, parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
+                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
                                     .await.unwrap();
                             },
                             None => {
