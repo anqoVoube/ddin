@@ -1,14 +1,12 @@
 use std::env;
 use rusoto_core::{Region, HttpClient, RusotoError};
 use rusoto_credential::{StaticProvider, CredentialsError};
-use rusoto_s3::{S3Client, S3, PutObjectRequest, PutObjectError};
+use rusoto_s3::{S3Client, S3, PutObjectRequest};
 use dotenvy_macro::dotenv;
 
-async fn upload_to_space(filename: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn upload_to_space(file_content: Vec<u8>, file_name: String) -> Result<(), Box<dyn std::error::Error>> {
     // Your DigitalOcean Spaces credentials
     let (access_key, secret_key, bucket_name) = fetch_space_secrets().await;
-    let file_path = format!("media/{}", filename);
-    let object_name = filename; // the name of the file in the Space
 
     // Set up the S3 client configuration
     let region = Region::Custom {
@@ -22,14 +20,12 @@ async fn upload_to_space(filename: &str) -> Result<(), Box<dyn std::error::Error
         region,
     );
 
-    // Read the file's contents into a byte array
-    let content = tokio::fs::read(file_path).await?;
-
     // Create the PUT request
     let put_request = PutObjectRequest {
-        bucket: bucket_name.to_string(),
-        key: object_name.to_string(),
-        body: Some(content.into()),
+        bucket: bucket_name.to_owned(),
+        key: file_name,
+        body: Some(file_content.into()),
+        acl: Some("public-read".to_owned()),
         ..Default::default()
     };
 

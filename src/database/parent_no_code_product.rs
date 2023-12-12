@@ -12,6 +12,8 @@ pub struct Model {
     pub images: Vec<String>,
     pub expiration_in_days: i32,
     pub business_id: Option<i32>,
+    #[sea_orm(column_type = "Text")]
+    pub description: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

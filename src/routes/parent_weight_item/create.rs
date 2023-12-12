@@ -5,10 +5,11 @@ use axum_extra::extract::Multipart;
 use std::{str, fs::File, io::Write, path::Path, fs};
 use axum::response::Response;
 use log::error;
-use sea_orm::{ActiveModelTrait, DatabaseConnection};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
 use crate::database::parent_weight_item;
-use crate::routes::utils::{default_created, internal_server_error};
+use crate::database::prelude::ParentWeightItem;
+use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, space_upload::upload_to_space, bad_request};
 
 pub struct RequestBody{
     main_image: Option<String>,
@@ -31,31 +32,49 @@ pub async fn upload(
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
 
-        if name.starts_with("image") {
-            let count = name.split("_").collect::<Vec<&str>>().first().unwrap().parse::<usize>().unwrap();
-            // Generate a unique filename for the image
-            // title won't be null as it will be send before the photo
-            let filename = format!("{}", process_title(&request_body.title.clone().unwrap()));
-            let filename_with_format = format!("additional-{}.jpg", filename);
-            let dir_path = format!("media/images/");
-            if let Ok(_) = fs::create_dir_all(&dir_path){
-                println!("Created directory")
+        if name.ends_with("images") {
+            let file_data: Vec<u8> = field.bytes().await.unwrap().to_vec();
+            let unique_hash = generate_uuid4();
+            match upload_to_space(file_data, unique_hash.clone()).await{
+                Ok(_) => {
+                    request_body.images.push(unique_hash);
+                },
+                Err(err) => {
+                    error!("Error: {:?}", err);
+                    return internal_server_error();
+                }
             }
-            // Specify the directory where the file will be saved
-            let filepath = Path::new(&dir_path).join(filename.clone());
-
-            // Get the image data
-            let file_data = field.bytes().await.unwrap();
-
-            // Save the file
-            let mut file = File::create(filepath).unwrap();
-            file.write_all(&file_data).unwrap();
-            request_body.images.push(filename_with_format);
 
         } else if name.ends_with("title") {
             let bytes = field.bytes().await.unwrap();
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
-            request_body.title = Some(text_data);
+            // checking for title existence
+            match ParentWeightItem::find()
+                .filter(parent_weight_item::Column::Title.Eq(text_data.clone()))
+                .one(&database).await{
+                Ok(Some(_)) => {
+                    return bad_request("Title already exists");
+                },
+                Ok(None) => {
+                    request_body.title = Some(text_data);
+                },
+                Err(err) => {
+                    error!("Error: {:?}", err);
+                    return internal_server_error();
+                }
+            }
+        } else {
+            let file_data: Vec<u8> = field.bytes().await.unwrap().to_vec();
+            let unique_hash = generate_uuid4();
+            match upload_to_space(file_data, unique_hash.clone()).await{
+                Ok(_) => {
+                    request_body.main_image = Some(unique_hash);
+                },
+                Err(err) => {
+                    error!("Error: {:?}", err);
+                    return internal_server_error();
+                }
+            }
         }
     }
 
@@ -76,10 +95,5 @@ pub async fn upload(
     }
 }
 
-pub fn process_title(title: &str) -> String{
-    let split_vec = title.split(" (").take(2).collect::<Vec<&str>>();
-    let [name, weight] = <[&str; 2]>::try_from(split_vec).ok().unwrap();
-    let replaced = name.replace(" ", "-").to_lowercase();
-    let replaced_weight = weight.replace(")", "");
-    format!("{}-{}.jpg", replaced, replaced_weight)
-}
+
+

@@ -29,7 +29,6 @@ pub async fn create(
         ..Default::default()
     };
 
-
     match new_parent_product.save(&database).await {
         Ok(instance) => {
             info!("{:?}", instance);
