@@ -1,3 +1,4 @@
+use sea_orm::QueryFilter;
 use axum::{ debug_handler, Extension};
 
 use axum_extra::extract::Multipart;
@@ -10,7 +11,7 @@ use sea_orm::ActiveValue::Set;
 use crate::database::parent_no_code_product;
 use crate::database::prelude::ParentNoCodeProduct;
 use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, space_upload::upload_to_space, bad_request};
-
+use sea_orm::ColumnTrait;
 pub struct RequestBody{
     main_image: Option<String>,
     title: Option<String>,
@@ -50,7 +51,7 @@ pub async fn upload(
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();
             // checking for title existence
             match ParentNoCodeProduct::find()
-                .filter(parent_no_code_product::Column::Title.Eq(text_data.clone()))
+                .filter(parent_no_code_product::Column::Title.eq(text_data.clone()))
                 .one(&database).await{
                 Ok(Some(_)) => {
                     return bad_request("Title already exists");

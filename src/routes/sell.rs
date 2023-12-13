@@ -121,7 +121,7 @@ pub async fn sell(
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);
-    let history_collection = mongo.collection::<History>("history");
+    let history_collection = mongo.collection::<History>("sell");
     let mut history_products: Vec<ParentProductBody> = vec!();
     let mut history_weight_items: Vec<ParentWeightItemBody> = vec!();
     let mut history_no_code_products: Vec<ParentNoCodeProductBody> = vec!();

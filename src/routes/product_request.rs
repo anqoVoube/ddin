@@ -49,7 +49,7 @@ pub async fn upload(
         }
         let mut object = objects.entry(count).or_insert(ObjectBody{..Default::default()});
 
-        if name == "main_image" {
+        if name.ends_with("main_image") {
             let filename = format!("{}.jpg", generate_uuid4());
             let dir_path = format!("media/images/{}", (*global_count - 1) / FILE_COUNT);
             if let Ok(_) = fs::create_dir_all(&dir_path){
