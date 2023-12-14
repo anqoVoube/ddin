@@ -97,7 +97,7 @@ pub async fn upload(
 
     let new_parent = parent_no_code_product::ActiveModel{
         title: Set(request_body.title.clone().unwrap()),
-        description: Set(request_body.description.clone().unwrap()),
+        description: Set(request_body.description.clone().unwrap_or("hello".to_owned())),
         main_image: Set(request_body.main_image.clone()),
         images: Set(request_body.images.clone()),
         expiration_in_days: Set(request_body.expiration_in_days.unwrap_or(DEFAULT_EXPIRATION_IN_DAYS)),
