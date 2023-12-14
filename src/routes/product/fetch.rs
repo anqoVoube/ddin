@@ -56,7 +56,7 @@ pub async fn fetch_products(
 
 ) -> Result<Response, Response> {
     let api_key = "12345";  // Replace with your actual API key
-    let centrifuge_url = "https://upload.ddin.uz/api";  // Replace with your Centrifugo server URL
+    let centrifuge_url = "https://centrifuge.ddin.uz/api";  // Replace with your Centrifugo server URL
 
     // Headers
     let mut headers = header::HeaderMap::new();
