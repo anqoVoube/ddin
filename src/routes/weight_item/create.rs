@@ -82,6 +82,7 @@ pub async fn create(
                         kg_weight: Set(kg_weight),
                         parent_id: Set(parent_id),
                         profit: Set(price - orig_price),
+                        is_accessible: Set(true),
                         ..Default::default()
                     };
 

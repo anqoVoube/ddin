@@ -17,6 +17,7 @@ mod statistics;
 pub mod product_request;
 mod parent_weight_item;
 pub mod debts;
+mod check;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
@@ -39,6 +40,7 @@ use crate::core::auth::middleware::{Auth, auth_getter};
 use crate::RedisPool;
 use crate::routes::business::create::create;
 use crate::routes::business::router::get_router as business_router;
+use crate::routes::check::check_title_uniqueness;
 use crate::routes::find::router::get_router as find_router;
 use crate::routes::user::router::get_router as user_router;
 use crate::routes::parent_product::router::get_router as parent_product_router;
@@ -89,6 +91,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
         .route("/weight-item", post(create_weight_item))
         .route("/sell", post(sell))
+        .route("/check-title", get(check_title_uniqueness))
         .nest("/find", find_router())
         .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())

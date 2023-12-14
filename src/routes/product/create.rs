@@ -68,6 +68,7 @@ pub async fn create(
                         business_id: Set(auth.business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),
                         parent_id: Set(parent_id),
+                        is_accessible: Set(true),
                         ..Default::default()
                     };
 

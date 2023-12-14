@@ -21,3 +21,26 @@ pub fn starts_with<T>(text: &str, column: T, is_case_sensitive: bool) -> Conditi
 
         condition
 }
+
+
+
+pub fn contains<T>(text: &str, column: T, is_case_sensitive: bool) -> Condition
+    where T: IntoColumnRef + sea_orm::ColumnTrait{
+    let like_text = if !is_case_sensitive {
+        format!("%{}%", text.to_lowercase())
+    } else {
+        text.to_string()
+    };
+
+    let condition = if !is_case_sensitive {
+        Condition::all().add(
+            Expr::expr(Func::lower(Expr::col(column))).like(like_text)
+        )
+    } else {
+        Condition::all().add(
+            column.contains(like_text)
+        )
+    };
+
+    condition
+}

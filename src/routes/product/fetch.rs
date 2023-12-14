@@ -1,5 +1,5 @@
 use axum::{debug_handler, Extension, Json};
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::response::{IntoResponse, Response};
 use chrono::NaiveDate;
 use http::{header, StatusCode};
@@ -42,14 +42,21 @@ pub struct ProductsSchema{
 }
 
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct QueryBody{
+    fast: Option<bool>
+}
+
 #[debug_handler] 
 pub async fn fetch_products(
     Extension(auth): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
-    Path(code): Path<String>
+    Path(code): Path<String>,
+    Query(QueryBody{fast}): Query<QueryBody>
+
 ) -> Result<Response, Response> {
     let api_key = "12345";  // Replace with your actual API key
-    let centrifuge_url = "http://127.0.0.1:8000/api";  // Replace with your Centrifugo server URL
+    let centrifuge_url = "https://upload.ddin.uz/api";  // Replace with your Centrifugo server URL
 
     // Headers
     let mut headers = header::HeaderMap::new();
@@ -116,22 +123,15 @@ pub async fn fetch_products(
         "method": "publish",
         "params": {
             "channel": "channel",
-            "data": {
-                "id": response_body.products[0].id,
-                "main_image": response_body.products[0].main_image,
-                "title": response_body.products[0].title,
-                "price": response_body.products[0].price,
-                "expiration_date": response_body.products[0].expiration_date,
-                "max_quantity": response_body.products[0].max_quantity
-            }
+            "data": response_body
         }
     });
     // Send request
-    // let response = reqwest::Client::new()
-    // .post(centrifuge_url)
-    // .headers(headers)
-    // .json(&payload)
-    // .send().await.unwrap();
+    let response = reqwest::Client::new()
+    .post(centrifuge_url)
+    .headers(headers)
+    .json(&payload)
+    .send().await.unwrap();
 
     println!("TELL");
     println!("{:#?}", response_body);

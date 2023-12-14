@@ -4,6 +4,7 @@ pub mod get_parent;
 pub mod space_upload;
 pub mod title_processor;
 pub mod hash_helper;
+pub mod item_type;
 
 use axum::body::Body;
 use axum::Json;
@@ -67,6 +68,17 @@ pub fn bad_request(message: &str) -> Response{
     ).into_response()
 }
 
+
+pub fn not_acceptable(message: &str) -> Response{
+    (
+        StatusCode::NOT_ACCEPTABLE,
+        Json(
+            ErrorResponse{
+                message: message.to_string()
+            }
+        )
+    ).into_response()
+}
 pub fn default_missing_header() -> Response{
     (
         StatusCode::NOT_ACCEPTABLE

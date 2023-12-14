@@ -13,6 +13,7 @@ pub struct Model {
     pub business_id: i32,
     pub parent_id: i32,
     pub profit: i32,
+    pub is_accessible: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
