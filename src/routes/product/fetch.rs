@@ -118,22 +118,21 @@ pub async fn fetch_products(
     }
 
     // {"id": 1, "image_url": "http://127.0.0.1:3000/media/milk.jpg", "title": "Milk", "price": 12000, "expiration_date": "2023-05-13", "max_quantity": 2}
-
-    let payload = json!({
-        "method": "publish",
-        "params": {
-            "channel": "channel",
-            "data": response_body
-        }
-    });
-    // Send request
-    let response = reqwest::Client::new()
-    .post(centrifuge_url)
-    .headers(headers)
-    .json(&payload)
-    .send().await.unwrap();
-
-    println!("TELL");
+    if let Some(_) = fast{
+        let payload = json!({
+            "method": "publish",
+            "params": {
+                "channel": "channel",
+                "data": response_body
+            }
+        });
+        // Send request
+        let response = reqwest::Client::new()
+            .post(centrifuge_url)
+            .headers(headers)
+            .json(&payload)
+            .send().await.unwrap();
+    }
     println!("{:#?}", response_body);
     Ok(
         (
