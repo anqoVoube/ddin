@@ -40,7 +40,16 @@ pub async fn google_search_title_by_code(
         .map(String::from)
         .collect::<Vec<String>>();
 
-    titles.append(&mut barcode_site_inner(code).await);
+
+
+    let mut inner = barcode_site_inner(code.clone()).await;
+    inner.append(&mut titles);
+
+    let transformed_vec: Vec<String> = inner
+        .into_iter()
+        .map(|s| s.replace((&format!("{}", code)), ""))
+        .collect();
+
 
     (
         StatusCode::OK,
