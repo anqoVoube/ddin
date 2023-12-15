@@ -4,6 +4,7 @@ pub mod sell;
 pub mod purchase;
 pub mod router;
 mod all;
+mod code;
 
 use std::string::ToString;
 use axum::{Extension, Json};

@@ -64,10 +64,7 @@ pub async fn fetch_products(
     headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
 
     // Client
-
     // Example payload
-
-
 
     let products = Product::find()
         .find_with_related(ParentProduct)
