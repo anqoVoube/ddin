@@ -55,7 +55,7 @@ pub async fn fetch_products(
     Query(QueryBody{fast}): Query<QueryBody>
 
 ) -> Result<Response, Response> {
-    let api_key = "12345";  // Replace with your actual API key
+    let api_key = "api-key";  // Replace with your actual API key
     let centrifuge_url = "https://centrifuge.ddin.uz/api";  // Replace with your Centrifugo server URL
 
     // Headers
