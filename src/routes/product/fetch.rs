@@ -17,6 +17,7 @@ use crate::database::parent_product;
 use crate::database::parent_product::Entity as ParentProduct;
 use crate::routes::utils::not_found;
 use serde_json::json;
+use crate::routes::find::code::ResponseBody;
 use crate::routes::parent_product::fetch::{get_object, ParentProductSchema};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -79,9 +80,7 @@ pub async fn fetch_products(
 
         .await.unwrap();
 
-    let mut response_body = ProductsSchema{
-        products: vec![]
-    };
+    let mut products_view: Vec<ProductSchema> = vec![];
 
     if products.len() == 0{
         println!("0 products find, trying to find parent product {}", code);
@@ -110,7 +109,7 @@ pub async fn fetch_products(
             main_image: parent_product.main_image.clone()
         };
 
-        response_body.products.push(product_body);
+        products_view.push(product_body);
 
     }
 
@@ -120,7 +119,7 @@ pub async fn fetch_products(
             "method": "publish",
             "params": {
                 "channel": "channel",
-                "data": response_body
+                "data": products_view
             }
         });
         // Send request
@@ -130,11 +129,13 @@ pub async fn fetch_products(
             .json(&payload)
             .send().await.unwrap();
     }
-    println!("{:#?}", response_body);
+    println!("{:#?}", products_view);
     Ok(
         (
         StatusCode::OK,
-        Json(response_body)
+        Json(ProductsSchema{
+            products: products_view
+        })
         ).into_response()
     )
 }

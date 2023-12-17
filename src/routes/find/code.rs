@@ -11,7 +11,7 @@ use crate::routes::SqliteDBConnection;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResponseBody{
-    result: Vec<String>
+    pub result: Vec<String>
 }
 
 
