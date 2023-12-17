@@ -92,12 +92,17 @@ pub async fn init_mongo(mongo_uri: &str) -> mongodb::Database{
     client.database("history")
 }
 
+pub async fn init_barcode_sqlite() -> rusqlite::Connection{
+    rusqlite::Connection::open("barcodes.db").expect("Failed to open database")
+}
+
 pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, mongo_uri: &str, running_port: &str){
     let database = init_db(database_uri).await;
     let redis = init_redis(redis_uri).await;
     let scylla = init_scylla(scylla_uri).await;
     let mongo = init_mongo(mongo_uri).await;
-    let app = create_routes(database, redis, scylla, mongo);
+    let sqlite = init_barcode_sqlite().await;
+    let app = create_routes(database, redis, scylla, mongo, sqlite);
     let url = format!("0.0.0.0:{}", running_port);
     axum::Server::bind(&url.parse().unwrap())
         .serve(app.into_make_service())

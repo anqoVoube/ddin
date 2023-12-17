@@ -64,6 +64,10 @@ pub struct ScyllaDBConnection {
     pub scylla: Arc<Session>
 }
 
+#[derive(Clone)]
+pub struct SqliteDBConnection {
+    pub sqlite: Arc<Mutex<rusqlite::Connection>>
+}
 
 pub fn v1_routes(connections: AppConnections) -> Router{
     let cors = CorsLayer::new()
@@ -105,10 +109,14 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 }
 
 
-pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Session, mongo: Database) -> Router<(), Body> {
+pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Session, mongo: Database, sqlite: rusqlite::Connection) -> Router<(), Body> {
     let connections = AppConnections{redis: redis.clone(), database: database.clone()};
     let scylla_connection = ScyllaDBConnection{
         scylla: Arc::new(scylla)
+    };
+
+    let sqlite_connection = SqliteDBConnection{
+        sqlite: Arc::new(Mutex::new(sqlite))
     };
     Router::new()
         .nest("/", v1_routes(connections.clone()))
@@ -117,5 +125,6 @@ pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Ses
         .layer(Extension(database))
         .layer(Extension(scylla_connection))
         .layer(Extension(mongo))
+        .layer(Extension(sqlite_connection))
         .layer(CookieManagerLayer::new())
 }
