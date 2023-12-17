@@ -111,7 +111,9 @@ pub async fn google_search_title_by_code(
         final_result.push(titles[i].clone());
     }
     final_result.append(&mut barcode_site_inner(code.clone()).await);
-    final_result.extend_from_slice(&titles[2..]);
+    if titles.len() > 2 {
+        final_result.extend_from_slice(&titles[2..]);
+    }
     let transformed_vec: Vec<String> = final_result
         .into_iter()
         .filter(|s| !s.contains("Barcode-list.ru"))
