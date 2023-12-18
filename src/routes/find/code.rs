@@ -123,7 +123,7 @@ pub async fn google_search_title_by_code(
         StatusCode::OK,
         Json(
             ResponseBody {
-                result: titles
+                result: transformed_vec
             }
         )
     ).into_response();
