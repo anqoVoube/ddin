@@ -84,6 +84,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
+        .route("/request-no-photo", post(product_request::upload_without_photo))
         .route("/expirations", get(expiration::get_expirations))
         .route("/update", post(update::update_product))
         .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))

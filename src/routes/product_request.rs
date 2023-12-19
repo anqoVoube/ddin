@@ -1,4 +1,5 @@
-use axum::{ debug_handler, Extension};
+use crate::database::prelude::ParentProduct;
+use axum::{debug_handler, Extension, Json};
 
 use axum_extra::extract::Multipart;
 
@@ -6,14 +7,14 @@ use std::{collections::HashMap, str, fs::File, io::Write, path::Path, fs};
 use axum::response::Response;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use sea_orm::{ActiveModelTrait, DatabaseConnection};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use tokio::sync::Mutex;
 use crate::database::parent_product;
 use crate::routes::utils::{default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
+use serde::Deserialize;
 use crate::routes::utils::hash_helper::generate_uuid4;
-use crate::routes::utils::title_processor::process_title;
-
+use sea_orm::{QueryFilter, ColumnTrait};
 
 static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
     let global_count = 0;
@@ -129,4 +130,58 @@ pub async fn upload(
     }
 
     default_ok()
+}
+
+
+#[derive(Deserialize)]
+pub struct RequestBody{
+    products: Vec<Instance>
+}
+
+
+#[derive(Deserialize)]
+pub struct Instance{
+    code: String,
+    title: String
+}
+
+#[debug_handler]
+pub async fn upload_without_photo(
+    Extension(database): Extension<DatabaseConnection>,
+    Json(RequestBody{products}): Json<RequestBody>
+) -> Response{
+    for product in products{
+        if check_if_code_exists(&product.code, &database).await{
+            continue;
+        } else {
+            let new_parent_product = parent_product::ActiveModel {
+                title: Set(product.title),
+                code: Set(product.code),
+                description: Set("hello".to_string()),
+                main_image: Set(None),
+                images: Set(vec!()),
+                expiration_in_days: Set(1000),
+                ..Default::default()
+            };
+
+            match new_parent_product.save(&database).await{
+                Ok(instance) => {
+                    info!("{:?}", instance);
+                },
+                Err(error) => {
+                    error!("Unable to create {:?}. Original error was {}", 1, error);
+                    return internal_server_error();
+                }
+            }
+        }
+    }
+    default_ok()
+}
+
+
+pub async fn check_if_code_exists(code: &str, database: &DatabaseConnection) -> bool{
+    match ParentProduct::find().filter(parent_product::Column::Code.eq(code)).one(database).await{
+        Ok(value) => value.is_some(),
+        Err(_) => false
+    }
 }
