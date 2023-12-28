@@ -1,3 +1,4 @@
+use crate::routes::utils::condition::contains;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 pub mod sell;
@@ -96,7 +97,7 @@ pub async fn find_product(search: String, business_id: i32, database: &DatabaseC
         .filter(
             Condition::all()
                 .add(product::Column::BusinessId.eq(business_id))
-                .add(starts_with(&search, parent_product::Column::Title, false))
+                .add(contains(&search, parent_product::Column::Title, false))
         )
 
         .all(database)
@@ -141,7 +142,7 @@ pub async fn find_weight_item(
                 .add(
                     Condition::any()
                         // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
-                        .add(starts_with(&search, parent_weight_item::Column::Title, false))
+                        .add(contains(&search, parent_weight_item::Column::Title, false))
                 )
         )
         .all(database)
@@ -184,7 +185,7 @@ pub async fn find_no_code_product(
                 .add(
                     Condition::any()
                         // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
-                        .add(starts_with(&search, parent_no_code_product::Column::Title, false))
+                        .add(contains(&search, parent_no_code_product::Column::Title, false))
                 )
         )
         .all(database)

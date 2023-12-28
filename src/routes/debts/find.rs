@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::database::prelude::Rent;
 use crate::database::rent;
 use crate::database::rent::Model;
-use crate::routes::utils::condition::starts_with;
+use crate::routes::utils::condition::contains;
 
 const DEFAULT_PAGE_SIZE: i32 = 15;
 const DEFAULT_PAGE: i32 = 1;
@@ -58,7 +58,7 @@ pub async fn full_serializer_search(
     let mut condition = Condition::all()
         .add(rent::Column::BusinessId.eq(auth.business_id));
     if let Some(search) = query.search{
-        condition = condition.add(starts_with(&search, rent::Column::Name, false));
+        condition = condition.add(contains(&search, rent::Column::Name, false));
         debts = Rent::find()
             .filter(
                 condition

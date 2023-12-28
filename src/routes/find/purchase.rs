@@ -17,7 +17,7 @@ use crate::database::prelude::ParentNoCodeProduct;
 use crate::database::prelude::ParentWeightItem;
 use crate::database::weight_item::Column::ParentId;
 use crate::routes::find::{Search, Types};
-use crate::routes::utils::condition::starts_with;
+use crate::routes::utils::condition::contains;
 
 
 #[derive(Serialize, Debug)]
@@ -121,7 +121,7 @@ pub async fn find_parent_weight_item(
             Condition::all()
                 .add(
                     Condition::all()
-                        .add(starts_with(&search, parent_weight_item::Column::Title, false))
+                        .add(contains(&search, parent_weight_item::Column::Title, false))
                 )
                 .add(
                     Condition::any()
@@ -162,7 +162,7 @@ pub async fn find_no_code_product(
             Condition::all()
                 .add(
                     Condition::all()
-                        .add(starts_with(&search, parent_no_code_product::Column::Title, false))
+                        .add(contains(&search, parent_no_code_product::Column::Title, false))
 
                 )
                 .add(
