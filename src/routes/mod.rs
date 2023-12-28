@@ -70,16 +70,19 @@ pub struct SqliteDBConnection {
 }
 
 pub fn v1_routes(connections: AppConnections) -> Router{
+    let origins = [
+        "https://ddin.uz".parse().unwrap(),
+    ];
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET])
-        .allow_origin(Any)
+        .allow_origin(origins)
         .allow_headers(vec![
             header::AUTHORIZATION,
             header::ACCEPT,
             header::CONTENT_TYPE,
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
-        ]);
-        // .allow_credentials(true);
+        ])
+        .allow_credentials(true);
 
     Router::new()
         .route("/ping", get(ping))
