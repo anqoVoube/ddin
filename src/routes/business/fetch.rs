@@ -1,13 +1,15 @@
 use axum::{Extension, Json};
 use axum::extract::Path;
 use http::StatusCode;
-use sea_orm::{Database, DatabaseConnection, EntityTrait};
+use sea_orm::{Condition, DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
 use serde::Serialize;
 use chrono::NaiveTime;
 use crate::database::business::Entity as Business;
 use crate::database::business::Model as BusinessModel;
 use rust_decimal::Decimal;
 use log::{warn};
+use crate::core::auth::middleware::Auth;
+use crate::database::business;
 
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
@@ -34,10 +36,14 @@ impl From<BusinessModel> for BusinessSchema {
 }
 
 pub async fn list(
+    Extension(Auth{user_id, business_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
 ) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
-
     let businesses = Business::find()
+        .filter(
+            Condition::all()
+                .add(business::Column::OwnerId.eq(user_id))
+        )
         .all(&database)
         .await
         .map_err(|_error| StatusCode::INTERNAL_SERVER_ERROR)?
