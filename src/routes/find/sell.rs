@@ -18,12 +18,11 @@ use crate::routes::find::{find_weight_item, find_no_code_product, find_product, 
 
 
 pub async fn search(
-    // Extension(Auth{ user_id, business_id }): Extension<Auth>,
+    Extension(Auth{ user_id, business_id }): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
         println!("{} {:?}", query.search, query.r#type);
-        let business_id: i32 = 1;
         match query.r#type{
             Types::Product => {
                 let data = find_product(query.search, business_id, &database).await;
