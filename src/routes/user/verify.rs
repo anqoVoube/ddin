@@ -45,7 +45,7 @@ pub async fn verify(
                                 let mut cookie = Cookie::new(SESSION_KEY, user.id.to_string());
                                 cookie.set_secure(true);
                                 cookie.set_http_only(true);
-                                cookie.set_same_site(SameSite::Strict);
+                                cookie.set_same_site(SameSite::None);
                                 cookie.set_domain("ddin.uz");
                                 cookies.add(cookie);
                                 return default_ok();
