@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use http::StatusCode;
 use log::{error, info};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 use sea_orm::entity::*;
 use sea_orm::query::*;
@@ -28,13 +28,14 @@ pub struct ResponseBody {
 
 pub async fn create(
     Extension(auth): Extension<Auth>,
+    Extension(headers): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Json(Body{name}): Json<Body>
 ) -> Response{
     let new_debt_user = rent::ActiveModel {
         name: Set(name),
         price: Set(0),
-        business_id: Set(auth.business_id),
+        business_id: Set(headers.business_id),
         ..Default::default()
     };
 

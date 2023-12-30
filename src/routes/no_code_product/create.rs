@@ -9,7 +9,7 @@ use crate::database::parent_no_code_product::Model as ParentNoCodeProductModel;
 use crate::database::prelude::{ParentNoCodeProduct, NoCodeProduct};
 use crate::database::no_code_product;
 use sea_orm::ColumnTrait;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::weight_item;
 use sea_orm::ActiveValue::Set;
 use crate::routes::utils::{default_created, internal_server_error};
@@ -40,6 +40,7 @@ pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
+    Extension(headers): Extension<CustomHeader>,
     Json(Body {parent_id, price, orig_price, quantity, produced_date}): Json<Body>
 ) -> Response {
     println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
@@ -53,7 +54,7 @@ pub async fn create(
             match NoCodeProduct::find()
                 .filter(
                     Condition::all()
-                        .add(no_code_product::Column::BusinessId.eq(auth.business_id))
+                        .add(no_code_product::Column::BusinessId.eq(headers.business_id))
                         .add(no_code_product::Column::ExpirationDate.eq(expiration_date))
                         .add(no_code_product::Column::ParentId.eq(parent.id))
                 )
@@ -78,7 +79,7 @@ pub async fn create(
                     let new_product = no_code_product::ActiveModel {
                         price: Set(price),
                         expiration_date: Set(expiration_date),
-                        business_id: Set(auth.business_id),
+                        business_id: Set(headers.business_id),
                         quantity: Set(quantity),
                         parent_id: Set(parent_id),
                         profit: Set(price - orig_price),

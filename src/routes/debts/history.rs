@@ -5,7 +5,7 @@ use sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::RentHistory;
 use crate::database::rent_history;
 use axum::response::{IntoResponse, Response};
@@ -74,7 +74,7 @@ pub struct Pagination{
 
 #[debug_handler]
 pub async fn get_history(
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
     Path(id): Path<i32>,
     Query(Pagination{page, page_size}): Query<Pagination>

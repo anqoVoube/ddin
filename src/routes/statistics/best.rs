@@ -5,10 +5,11 @@ use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
 use chrono::{NaiveDate, NaiveDateTime, Local, Utc, Datelike, TimeZone};
 use http::StatusCode;
+use multipart::server::nickel::nickel::MediaType::C;
 use scylla::{IntoTypedRows, Session as ScyllaDBSession};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
@@ -86,7 +87,8 @@ pub struct StatisticsResponse{
 pub async fn full(
     Extension(ScyllaDBConnection{scylla}): Extension<ScyllaDBConnection>,
     Extension(database): Extension<DatabaseConnection>,
-    Extension(Auth {user_id, business_id}): Extension<Auth>,
+    Extension(Auth {user_id}): Extension<Auth>,
+    Extension(CustomHeader {business_id}): Extension<CustomHeader>,
     Query(Search {r#type, prev}): Query<Search>
 ) -> Response{
 

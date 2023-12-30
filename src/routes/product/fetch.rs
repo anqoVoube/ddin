@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::database::product::Entity as Product;
 
 use sea_orm::ColumnTrait;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::product;
 use crate::database::parent_product;
 
@@ -51,6 +51,7 @@ pub struct QueryBody{
 #[debug_handler] 
 pub async fn fetch_products(
     Extension(auth): Extension<Auth>,
+    Extension(custom_headers): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Path(code): Path<String>,
     Query(QueryBody{fast}): Query<QueryBody>
@@ -72,7 +73,7 @@ pub async fn fetch_products(
 
         .filter(
             Condition::all()
-                .add(product::Column::BusinessId.eq(auth.business_id))
+                .add(product::Column::BusinessId.eq(custom_headers.business_id))
                 .add(parent_product::Column::Code.eq(code.clone()))
         )
 
@@ -84,7 +85,7 @@ pub async fn fetch_products(
 
     if products.len() == 0{
         println!("0 products find, trying to find parent product {}", code);
-        return match get_object(&database, code, auth.business_id).await {
+        return match get_object(&database, code, custom_headers.business_id).await {
             Ok(parent_product) => {
                 let parent_product_schema: ParentProductSchema = parent_product.into();
                 return Ok(

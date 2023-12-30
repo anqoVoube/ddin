@@ -8,7 +8,7 @@ use sea_orm::ActiveValue::Set;
 use crate::database::business;
 use rust_decimal::Decimal;
 use log::{error, info};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::routes::utils::{internal_server_error};
 
 fn default_as_false() -> bool {

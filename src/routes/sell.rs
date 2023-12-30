@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::{DateTimeUtc, DateTimeWithTimeZone};
 use serde_json::json;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{NoCodeProduct, Rent, WeightItem};
 use crate::database::product::Entity as Product;
 use crate::database::{no_code_product, product, rent, rent_history, weight_item};
@@ -117,7 +117,8 @@ pub async fn sell(
     Extension(database): Extension<DatabaseConnection>,
     Extension(ScyllaDBConnection {scylla}): Extension<ScyllaDBConnection>,
     Extension(mongo): Extension<Database>,
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Json(sell): Json<SellBody>
 ) -> Response {
     println!("{:?}", sell);

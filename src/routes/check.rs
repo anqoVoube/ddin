@@ -1,6 +1,6 @@
 // use axum::Extension;
 // use sea_orm::{Condition, DatabaseConnection, EntityTrait};
-// use crate::core::auth::middleware::Auth;
+// use crate::core::auth::middleware::{Auth, CustomHeader};
 // use axum::response::{IntoResponse, Response};
 // use axum::{extract::Query, debug_handler};
 // use http::StatusCode;
@@ -16,7 +16,7 @@
 //
 // #[debug_handler]
 // pub async fn check_title_uniqueness(
-//     Extension(Auth{user_id, business_id}): Extension<Auth>,
+//     Extension(Auth{user_id}): Extension<Auth>,,
 //     Extension(database): Extension<DatabaseConnection>,
 //     Query(Search{title, item_type}): Query<Search>
 // ) -> Response {
@@ -111,7 +111,7 @@ use sea_orm::QueryFilter;
 use axum::{Extension, extract::Query, response::{IntoResponse, Response}, http::StatusCode, debug_handler};
 use sea_orm::{DatabaseConnection, EntityTrait, Condition, sea_query::IntoColumnRef};
 use serde::{Deserialize, Serialize};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::{parent_no_code_product, parent_product, parent_weight_item};
 use crate::database::prelude::{ParentNoCodeProduct, ParentProduct, ParentWeightItem};
 use crate::routes::utils::{bad_request, default_ok, not_acceptable};
@@ -126,7 +126,8 @@ pub struct Search {
 
 #[debug_handler]
 pub async fn check_title_uniqueness(
-    Extension(Auth { user_id, business_id }): Extension<Auth>,
+    Extension(Auth { user_id}): Extension<Auth>,
+    Extension(CustomHeader {business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Query(Search { title, item_type }): Query<Search>
 ) -> Response {

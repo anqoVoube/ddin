@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::routes::ScyllaDBConnection;
 use crate::routes::statistics::{get_date_range, Types};
 use axum::extract::Query;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 #[derive(Serialize)]
 pub struct Statistics{
@@ -30,7 +30,8 @@ pub struct Search {
 
 #[debug_handler]
 pub async fn product_stats(
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(ScyllaDBConnection{scylla}): Extension<ScyllaDBConnection>,
     Query(Search{r#type, prev, parent_id, item_type}): Query<Search>,
 ) -> Response{

@@ -36,7 +36,7 @@ use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{Any, CorsLayer};
-use crate::core::auth::middleware::{Auth, auth_getter};
+use crate::core::auth::middleware::{Auth, auth_getter, business_getter, validate_business_id};
 use crate::RedisPool;
 use crate::routes::business::create::create;
 use crate::routes::business::router::get_router as business_router;
@@ -69,10 +69,13 @@ pub struct SqliteDBConnection {
     pub sqlite: Arc<Mutex<rusqlite::Connection>>
 }
 
+
+
 pub fn v1_routes(connections: AppConnections) -> Router{
     let origins = [
         "https://ddin.uz".parse().unwrap(),
     ];
+
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET])
         .allow_origin(origins)
@@ -101,12 +104,16 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/sell", post(sell))
         .route("/check-title", get(check_title_uniqueness))
         .nest("/find", find_router())
-        .nest("/business", business_router())
+        // .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
         .nest("/no-code-product", no_code_product_router())
         .nest("/statistics", statistics_router())
+        .route_layer(middleware::from_fn_with_state(connections.clone(), validate_business_id))
+        .route_layer(middleware::from_fn_with_state(connections.clone(), business_getter))
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
+        .nest("/business", business_router())
+
         .layer(DefaultBodyLimit::max(1024 * 1024 * 2000))
         .nest("/user/", user_router())
         .layer(cors)
@@ -122,6 +129,7 @@ pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Ses
     let sqlite_connection = SqliteDBConnection{
         sqlite: Arc::new(Mutex::new(sqlite))
     };
+
     Router::new()
         .nest("/", v1_routes(connections.clone()))
         .route("/media/*path", get(media_path))

@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use http::StatusCode;
 use scylla::Session;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 use sea_orm::entity::*;
 use sea_orm::query::*;
@@ -18,7 +18,8 @@ use crate::routes::find::{find_weight_item, find_no_code_product, find_product, 
 
 
 pub async fn search(
-    Extension(Auth{ user_id, business_id }): Extension<Auth>,
+    Extension(Auth {user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{

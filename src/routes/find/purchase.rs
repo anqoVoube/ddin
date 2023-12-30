@@ -6,7 +6,7 @@ use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilt
 use serde::{Deserialize, Serialize};
 use serde_repr::{Serialize_repr, Deserialize_repr};
 use http::StatusCode;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::Product;
 use crate::database::prelude::ParentProduct;
 use crate::database::{parent_no_code_product, parent_product, parent_weight_item, product, weight_item};
@@ -59,19 +59,20 @@ pub struct ParentNoCodeProductsSchema{
 
 pub async fn search(
     Extension(auth): Extension<Auth>,
+    Extension(headers): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
     println!("{} {:?}", query.search, query.r#type);
     match query.r#type{
         Types::Product => {
-            let data = find_product(query.search, auth.business_id, &database).await;
+            let data = find_product(query.search, headers.business_id, &database).await;
             ().into_response()
         },
         Types::WeightItem => {
             let data = find_parent_weight_item(
                 query.search,
-                auth.business_id,
+                headers.business_id,
                 &database
             ).await;
             (
@@ -82,7 +83,7 @@ pub async fn search(
         Types::NoCodeProduct => {
             let data = find_no_code_product(
                 query.search,
-                auth.business_id,
+                headers.business_id,
                 &database
             ).await;
             (

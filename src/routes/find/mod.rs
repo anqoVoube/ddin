@@ -16,7 +16,7 @@ use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilt
 use serde::{Deserialize, Serialize};
 use http::StatusCode;
 use sea_orm::sea_query::{Expr, Func};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{NoCodeProduct, ParentNoCodeProduct, Product};
 use crate::database::prelude::ParentProduct;
 use crate::database::{no_code_product, parent_no_code_product, parent_product, parent_weight_item, product, weight_item};

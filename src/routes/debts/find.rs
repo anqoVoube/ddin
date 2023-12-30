@@ -4,7 +4,7 @@ use axum::response::{Response, IntoResponse};
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use http::StatusCode;
 use multipart::server::nickel::nickel::hyper::header::q;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 use sea_orm::entity::*;
 use sea_orm::query::*;
@@ -51,12 +51,13 @@ pub struct FullDebts{
 
 pub async fn full_serializer_search(
     Extension(auth): Extension<Auth>,
+    Extension(headers): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
 ) -> Response{
     let mut debts: Vec<Model> = vec![];
     let mut condition = Condition::all()
-        .add(rent::Column::BusinessId.eq(auth.business_id));
+        .add(rent::Column::BusinessId.eq(headers.business_id));
     if let Some(search) = query.search{
         condition = condition.add(contains(&search, rent::Column::Name, false));
         debts = Rent::find()

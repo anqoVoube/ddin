@@ -4,7 +4,7 @@ use sea_orm::{Condition, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilt
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use http::StatusCode;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{Product, WeightItem, NoCodeProduct, ParentProduct, ParentWeightItem, ParentNoCodeProduct};
 use crate::database::{no_code_product, product, weight_item};
 
@@ -42,7 +42,8 @@ pub struct ExpiredNoCodeProducts{
 
 #[debug_handler]
 pub async fn get_expirations(
-    Extension(Auth {user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
 ) -> Response{
     let mut all_expired = AllExpired{

@@ -1,5 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 use axum::{debug_handler, Extension, Json};
 use serde::{Serialize};
@@ -44,6 +44,7 @@ pub struct ExpiredNoCodeProducts{
 #[debug_handler]
 pub async fn ping(
     Extension(auth): Extension<Auth>,
+    Extension(headers): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>
 ) -> Result<Response, Response>{
     let mut all_expired = AllExpired{
@@ -55,7 +56,7 @@ pub async fn ping(
     let today = Utc::now().naive_utc().date();
     println!("{}", today);
     let condition = Condition::all()
-        .add(product::Column::BusinessId.eq(auth.business_id))
+        .add(product::Column::BusinessId.eq(headers.business_id))
         .add(product::Column::ExpirationDate.eq(today));
     let products = Product::find()
         .find_with_related(ParentProduct)
@@ -76,7 +77,7 @@ pub async fn ping(
 
 
     let condition = Condition::all()
-        .add(weight_item::Column::BusinessId.eq(auth.business_id))
+        .add(weight_item::Column::BusinessId.eq(headers.business_id))
         .add(weight_item::Column::ExpirationDate.eq(today));
     let weight_items = WeightItem::find()
         .find_with_related(ParentWeightItem)
@@ -97,7 +98,7 @@ pub async fn ping(
 
 
     let condition = Condition::all()
-        .add(no_code_product::Column::BusinessId.eq(auth.business_id))
+        .add(no_code_product::Column::BusinessId.eq(headers.business_id))
         .add(no_code_product::Column::ExpirationDate.eq(today));
     let no_code_products = NoCodeProduct::find()
         .find_with_related(ParentNoCodeProduct)
@@ -116,6 +117,6 @@ pub async fn ping(
         })
     }
 
-    auth.validate_business_id(&database).await?;
+    // auth.validate_business_id(&database).await?;
     Ok((StatusCode::OK, Json(all_expired)).into_response())
 }

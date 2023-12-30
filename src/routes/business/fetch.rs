@@ -8,48 +8,62 @@ use crate::database::business::Entity as Business;
 use crate::database::business::Model as BusinessModel;
 use rust_decimal::Decimal;
 use log::{warn};
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::business;
 
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
+    id: i32,
     title: String,
-    location: Vec<Decimal>,
-    works_from: NaiveTime,
-    works_until: NaiveTime,
-    #[serde(default="default_as_false")]
-    is_closed: bool,
-    owner_id: i32
+    // location: Vec<Decimal>,
+    // works_from: NaiveTime,
+    // works_until: NaiveTime,
+    // #[serde(default="default_as_false")]
+    // is_closed: bool,
+    // owner_id: i32
 }
 
 impl From<BusinessModel> for BusinessSchema {
     fn from(business: BusinessModel) -> Self {
         BusinessSchema {
+            id: business.id,
             title: business.title,
-            location: business.location,
-            works_from: business.works_from,
-            works_until: business.works_until,
-            is_closed: business.is_closed,
-            owner_id: business.owner_id
+            // location: business.location,
+            // works_from: business.works_from,
+            // works_until: business.works_until,
+            // is_closed: business.is_closed,
+            // owner_id: business.owner_id
         }
     }
 }
 
 pub async fn list(
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    // Extension(Auth{user_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
+    Path(count): Path<i32>,
 ) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
-    let businesses = Business::find()
-        .filter(
-            Condition::all()
-                .add(business::Column::OwnerId.eq(user_id))
+    // let businesses = Business::find()
+    //     .filter(
+    //         Condition::all()
+    //             .add(business::Column::OwnerId.eq(user_id))
+    //     )
+    //     .all(&database)
+    //     .await
+    //     .map_err(|_error| StatusCode::INTERNAL_SERVER_ERROR)?
+    //     .into_iter()
+    //     .map(|business| business.into())
+    //     .collect::<Vec<BusinessSchema>>();
+
+    let mut businesses: Vec<BusinessSchema> = Vec::new();
+
+    for i in 0..count{
+        businesses.push(
+            BusinessSchema {
+                id: i + 1,
+                title: format!("Business: {}", i + 1).to_string(),
+            }
         )
-        .all(&database)
-        .await
-        .map_err(|_error| StatusCode::INTERNAL_SERVER_ERROR)?
-        .into_iter()
-        .map(|business| business.into())
-        .collect::<Vec<BusinessSchema>>();
+    }
 
     Ok(Json(businesses))
 }

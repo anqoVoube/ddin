@@ -11,7 +11,7 @@ use crate::database::parent_product::Model as ParentProductModel;
 use log::{error, info, warn};
 use crate::database::parent_product;
 use sea_orm::ColumnTrait;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 #[derive(Serialize, Debug)]
 pub struct ParentProductSchema {
@@ -35,7 +35,8 @@ impl From<ParentProductModel> for ParentProductSchema {
 #[debug_handler]
 pub async fn get_object_by_code(
     Extension(database): Extension<DatabaseConnection>,
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Path(code): Path<String>
 ) -> Result<Json<ParentProductSchema>, StatusCode> {
     println!("REQUEST!");

@@ -12,7 +12,7 @@ use crate::database::parent_no_code_product;
 use crate::database::prelude::ParentNoCodeProduct;
 use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, space_upload::upload_to_space, bad_request};
 use sea_orm::ColumnTrait;
-use crate::core::auth::middleware::Auth;
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 const DEFAULT_EXPIRATION_IN_DAYS: i32 = 365;
 
@@ -26,7 +26,8 @@ pub struct RequestBody{
 
 #[debug_handler]
 pub async fn upload(
-    Extension(Auth{user_id, business_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     mut multipart: Multipart
 ) -> Response {
