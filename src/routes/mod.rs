@@ -74,7 +74,8 @@ pub struct SqliteDBConnection {
 pub fn v1_routes(connections: AppConnections) -> Router{
     let origins = [
         "https://ddin.uz".parse().unwrap(),
-        "http://81.95.230.194"
+        "81.95.230.194".parse().unwrap(),
+        "http://81.95.230.194".parse().unwrap()
     ];
 
     let cors = CorsLayer::new()
