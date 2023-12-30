@@ -44,7 +44,7 @@ impl From<BusinessModel> for BusinessSchema {
 }
 
 pub async fn list(
-    // Extension(Auth{user_id}): Extension<Auth>,
+    Extension(Auth{user_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
     Path(count): Path<i32>,
 ) -> Result<Json<BusinessesSchema>, StatusCode> {
