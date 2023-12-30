@@ -48,30 +48,21 @@ pub async fn list(
     Extension(database): Extension<DatabaseConnection>,
     Path(count): Path<i32>,
 ) -> Result<Json<BusinessesSchema>, StatusCode> {
-    // let businesses = Business::find()
-    //     .filter(
-    //         Condition::all()
-    //             .add(business::Column::OwnerId.eq(user_id))
-    //     )
-    //     .all(&database)
-    //     .await
-    //     .map_err(|_error| StatusCode::INTERNAL_SERVER_ERROR)?
-    //     .into_iter()
-    //     .map(|business| business.into())
-    //     .collect::<Vec<BusinessSchema>>();
-
-    let mut business_schema: BusinessesSchema = BusinessesSchema{
-        businesses: vec![]
-    };
-
-    for i in 0..count{
-        business_schema.businesses.push(
-            BusinessSchema {
-                id: i + 1,
-                title: format!("Business: {}", i + 1).to_string(),
-            }
+    let businesses = Business::find()
+        .filter(
+            Condition::all()
+                .add(business::Column::OwnerId.eq(user_id))
         )
-    }
+        .all(&database)
+        .await
+        .map_err(|_error| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_iter()
+        .map(|business| business.into())
+        .collect::<Vec<BusinessSchema>>();
+
+    let business_schema: BusinessesSchema = BusinessesSchema{
+        businesses
+    };
 
     Ok(Json(business_schema))
 }
