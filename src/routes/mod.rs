@@ -86,7 +86,6 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
         ])
         .allow_credentials(true);
-
     Router::new()
         .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
@@ -111,12 +110,14 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .nest("/statistics", statistics_router())
         .route_layer(middleware::from_fn_with_state(connections.clone(), validate_business_id))
         .route_layer(middleware::from_fn_with_state(connections.clone(), business_getter))
-        .route_layer(middleware::from_fn_with_state(connections, auth_getter))
         .nest("/business", business_router())
+
+        .route_layer(middleware::from_fn_with_state(connections, auth_getter))
 
         .layer(DefaultBodyLimit::max(1024 * 1024 * 2000))
         .nest("/user/", user_router())
         .layer(cors)
+
 }
 
 
