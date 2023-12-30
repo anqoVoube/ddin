@@ -23,6 +23,12 @@ pub struct BusinessSchema {
     // owner_id: i32
 }
 
+#[derive(Serialize, Debug)]
+pub struct BusinessesSchema {
+    pub businesses: Vec<BusinessSchema>
+}
+
+
 impl From<BusinessModel> for BusinessSchema {
     fn from(business: BusinessModel) -> Self {
         BusinessSchema {
@@ -41,7 +47,7 @@ pub async fn list(
     // Extension(Auth{user_id}): Extension<Auth>,
     Extension(database): Extension<DatabaseConnection>,
     Path(count): Path<i32>,
-) -> Result<Json<Vec<BusinessSchema>>, StatusCode> {
+) -> Result<Json<BusinessesSchema>, StatusCode> {
     // let businesses = Business::find()
     //     .filter(
     //         Condition::all()
@@ -54,10 +60,12 @@ pub async fn list(
     //     .map(|business| business.into())
     //     .collect::<Vec<BusinessSchema>>();
 
-    let mut businesses: Vec<BusinessSchema> = Vec::new();
+    let mut business_schema: BusinessesSchema = BusinessesSchema{
+        businesses: vec![]
+    };
 
     for i in 0..count{
-        businesses.push(
+        business_schema.businesses.push(
             BusinessSchema {
                 id: i + 1,
                 title: format!("Business: {}", i + 1).to_string(),
@@ -65,7 +73,7 @@ pub async fn list(
         )
     }
 
-    Ok(Json(businesses))
+    Ok(Json(business_schema))
 }
 
 pub async fn get_object(
