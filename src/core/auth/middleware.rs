@@ -231,7 +231,6 @@ pub async fn auth_getter<B>(
 
 pub async fn business_getter<B>(
     State(connections): State<AppConnections>,
-    cookies: Cookies,
     mut request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{
