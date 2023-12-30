@@ -82,7 +82,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     ];
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::POST, Method::GET])
+        .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
         .allow_origin(origins)
         .allow_headers(vec![
             header::AUTHORIZATION,
