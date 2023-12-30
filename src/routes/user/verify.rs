@@ -12,6 +12,7 @@ use crate::database::prelude::{User, Verification};
 use crate::database::user;
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 use sea_orm::ActiveValue::Set;
+use tower_cookies::cookie::SameSite;
 use crate::RedisPool;
 
 const SESSION_KEY: &str = "session-key";
@@ -44,6 +45,8 @@ pub async fn verify(
                                 let mut cookie = Cookie::new(SESSION_KEY, user.id.to_string());
                                 cookie.set_secure(true);
                                 cookie.set_http_only(true);
+                                cookie.set_same_site(SameSite::None);
+                                cookie.set_domain("ddin.uz");
                                 cookies.add(cookie);
                                 return default_ok();
                             },
