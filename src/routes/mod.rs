@@ -89,6 +89,8 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             header::ACCEPT,
             header::CONTENT_TYPE,
             header::COOKIE,
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
             HeaderName::from_lowercase(b"no_add_token").unwrap(),
         ])
