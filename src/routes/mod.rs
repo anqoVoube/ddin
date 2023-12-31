@@ -94,6 +94,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
             HeaderName::from_lowercase(b"no_add_token").unwrap(),
         ])
+
         .allow_credentials(true);
     Router::new()
         .route("/ping", get(ping))
