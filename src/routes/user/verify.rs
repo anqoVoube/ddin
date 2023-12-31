@@ -47,6 +47,7 @@ pub async fn verify(
                                 cookie.set_http_only(true);
                                 cookie.set_same_site(SameSite::Strict);
                                 cookie.set_domain("ddin.uz");
+                                cookie.set_path("/");
                                 cookies.add(cookie);
                                 return default_ok();
                             },
