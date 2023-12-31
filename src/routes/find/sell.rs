@@ -18,7 +18,6 @@ use crate::routes::find::{find_weight_item, find_no_code_product, find_product, 
 
 
 pub async fn search(
-    Extension(Auth {user_id}): Extension<Auth>,
     Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
     Query(query): Query<Search>
