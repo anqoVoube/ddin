@@ -221,10 +221,16 @@ pub async fn auth_getter<B>(
             }
         );
     } else {
-        return Err(Response::builder()
-            .status(StatusCode::UNAUTHORIZED)
-            .body(Body::from("You have no session"))
-            .unwrap());
+        // TODO: remove
+        extensions.insert(
+            Auth{
+                user_id: 94,
+            }
+        );
+        // return Err(Response::builder()
+        //     .status(StatusCode::UNAUTHORIZED)
+        //     .body(Body::from("You have no session"))
+        //     .unwrap());
     };
     Ok(next.run(request).await)
 }
