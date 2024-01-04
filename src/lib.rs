@@ -81,7 +81,7 @@ pub async fn init_scylla(scylla_url: &str) -> Session{
             &[],
         )
         .await
-        .expect("Failed to create table products");
+        .expect("Failed to create table products.");
 
     session
 }

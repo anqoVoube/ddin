@@ -71,7 +71,6 @@ pub struct SqliteDBConnection {
 }
 
 
-
 pub fn v1_routes(connections: AppConnections) -> Router{
     let origins = [
         "https://ddin.uz".parse().unwrap(),
