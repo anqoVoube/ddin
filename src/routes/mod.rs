@@ -18,7 +18,7 @@ pub mod product_request;
 mod parent_weight_item;
 pub mod debts;
 mod check;
-mod bot;
+// mod bot;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
