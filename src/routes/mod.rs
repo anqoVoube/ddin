@@ -18,6 +18,7 @@ pub mod product_request;
 mod parent_weight_item;
 pub mod debts;
 mod check;
+mod bot;
 
 use std::sync::Arc;
 use axum::{Router, body::Body, Extension, middleware};
@@ -75,10 +76,10 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     let origins = [
         "https://ddin.uz".parse().unwrap(),
         "https://api.ddin.uz".parse().unwrap(),
-        // "81.95.230.194".parse().unwrap(),
-        // "http://81.95.230.194".parse().unwrap(),
-        // "84.54.122.78".parse().unwrap(),
-        // "http://84.54.122.78".parse().unwrap()
+        "81.95.230.194".parse().unwrap(),
+        "http://81.95.230.194".parse().unwrap(),
+        "84.54.122.78".parse().unwrap(),
+        "http://84.54.122.78".parse().unwrap()
     ];
 
     let cors = CorsLayer::new()
@@ -126,6 +127,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
         .layer(DefaultBodyLimit::max(1024 * 1024 * 2000))
         .nest("/user/", user_router())
+        // .route("/webhook", post(bot_webhook))
         .layer(cors)
 
 }
