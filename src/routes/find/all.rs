@@ -5,7 +5,7 @@ use axum::response::{Response, IntoResponse};
 use http::StatusCode;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use crate::routes::find::{find_product, find_no_code_product, find_weight_item, NoCodeProductSchema, ProductSchema, WeightItemSchema};
+use crate::routes::find::{find_product, find_no_code_product, find_weight_item, NoCodeProductSchema, ProductSchema, WeightItemSchema, FilterType};
 
 
 #[derive(Deserialize, Serialize)]
@@ -29,9 +29,9 @@ pub async fn search(
     Extension(database): Extension<DatabaseConnection>,
     Query(Search {search}): Query<Search>
 ) -> Response {
-    let products = find_product(search.clone(), headers.business_id, &database).await;
-    let weight_items = find_weight_item(search.clone(), headers.business_id, &database).await;
-    let no_code_products = find_no_code_product(search, headers.business_id, &database).await;
+    let products = find_product(search.clone(), FilterType::Contains, headers.business_id, &database).await;
+    let weight_items = find_weight_item(search.clone(), FilterType::Contains, headers.business_id, &database).await;
+    let no_code_products = find_no_code_product(search, FilterType::Contains, headers.business_id, &database).await;
     (
         StatusCode::OK,
         Json(SearchResult{

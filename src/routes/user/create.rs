@@ -12,9 +12,12 @@ use sea_orm::ColumnTrait;
 use crate::database::verification::Entity as Verification;
 
 use rand::{Rng, thread_rng};
+use redis::AsyncCommands;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
+use crate::RedisPool;
 use crate::routes::AppConnections;
+use crate::routes::utils::hash_helper::generate_uuid4;
 
 const SESSION_KEY: &str = "session-key";
 
@@ -27,12 +30,111 @@ pub struct Body {
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct VerificationData {
-    verification_id: i32,
+    verification_id: String,
 }
+
+// #[debug_handler]
+// pub async fn create(
+//     Extension(database): Extension<DatabaseConnection>,
+//     cookies: Cookies,
+//     Json(Body{ first_name, last_name, phone_number}): Json<Body>,
+// ) -> Response {
+//     if !is_valid_phone_number(&phone_number) {
+//         return bad_request("Invalid phone number");
+//     }
+//     println!("{:?}", cookies);
+//     let mut condition = Condition::all();
+//     condition = condition.add(user::Column::PhoneNumber.eq(phone_number.clone()));
+//     match User::find().filter(condition).one(&database).await{
+//         Ok(Some(user)) => {
+//             if user.is_verified {
+//                 return bad_request("Phone number is already registered");
+//             }
+//
+//             let mut condition = Condition::all();
+//             condition = condition.add(verification::Column::UserId.eq(user.id));
+//             match Verification::find().filter(condition).one(&database).await{
+//                 Ok(Some(instance)) => {
+//                     let mut instance: verification::ActiveModel = instance.into();
+//                     instance.code = Set(generate_six_digit_number());
+//
+//                     instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
+//
+//                     match instance.update(&database).await{
+//                         Ok(_) => {
+//                             // todo! create session
+//
+//                             println!("verification created");
+//                             default_created()
+//                         },
+//                         Err(err) => {
+//                             println!("{}", err);
+//                             internal_server_error()
+//                         }
+//                     }
+//                 },
+//                 Err(err) => {
+//                     println!("{}", err);
+//                     return internal_server_error();
+//                 },
+//                 _ => {
+//                     println!("Verification instance not found for user_id: {}", user.id);
+//                     return internal_server_error();
+//                 }
+//             }
+//         },
+//         Err(err) => {
+//             println!("{}", err);
+//             return internal_server_error();
+//         },
+//         _ => {
+//             let new_user = user::ActiveModel {
+//                 first_name: Set(first_name),
+//                 last_name: Set(last_name),
+//                 phone_number: Set(phone_number),
+//                 is_verified: Set(false),
+//                 ..Default::default()
+//             };
+//             match new_user.save(&database).await{
+//                 Ok(user) => {
+//                     let user_id = user.id.unwrap();
+//                     println!("User created");
+//                     let new_verification = verification::ActiveModel {
+//                         user_id: Set(user_id),
+//                         code: Set(generate_six_digit_number()),
+//                         expiration: Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5))),
+//                         ..Default::default()
+//                     };
+//
+//                     match new_verification.save(&database).await {
+//                         Ok(verification) => {
+//                             let verification_id = verification.id.unwrap();
+//                             println!("Verification created");
+//                             (
+//                                 StatusCode::CREATED,
+//                                 Json(VerificationData{verification_id})
+//                             ).into_response()
+//                         },
+//                         Err(err) => {
+//                             println!("{}", err);
+//                             internal_server_error()
+//                         }
+//                     }
+//                 },
+//                 Err(err) => {
+//                     println!("{}", err);
+//                     internal_server_error()
+//                 }
+//             }
+//         }
+//     }
+// }
+
 
 #[debug_handler]
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
+    Extension(redis): Extension<RedisPool>,
     cookies: Cookies,
     Json(Body{ first_name, last_name, phone_number}): Json<Body>,
 ) -> Response {
@@ -44,89 +146,31 @@ pub async fn create(
     condition = condition.add(user::Column::PhoneNumber.eq(phone_number.clone()));
     match User::find().filter(condition).one(&database).await{
         Ok(Some(user)) => {
-            if user.is_verified {
-                return bad_request("Phone number is already registered");
-            }
-
-            let mut condition = Condition::all();
-            condition = condition.add(verification::Column::UserId.eq(user.id));
-            match Verification::find().filter(condition).one(&database).await{
-                Ok(Some(instance)) => {
-                    let mut instance: verification::ActiveModel = instance.into();
-                    instance.code = Set(generate_six_digit_number());
-
-                    instance.expiration = Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5)));
-
-                    match instance.update(&database).await{
-                        Ok(_) => {
-                            // todo! create session
-
-                            println!("verification created");
-                            default_created()
-                        },
-                        Err(err) => {
-                            println!("{}", err);
-                            internal_server_error()
-                        }
-                    }
-                },
-                Err(err) => {
-                    println!("{}", err);
-                    return internal_server_error();
-                },
-                _ => {
-                    println!("Verification instance not found for user_id: {}", user.id);
-                    return internal_server_error();
-                }
-            }
+            return bad_request("Phone number already exists");
         },
         Err(err) => {
             println!("{}", err);
             return internal_server_error();
         },
         _ => {
-            let new_user = user::ActiveModel {
-                first_name: Set(first_name),
-                last_name: Set(last_name),
-                phone_number: Set(phone_number),
-                is_verified: Set(false),
-                ..Default::default()
-            };
-            match new_user.save(&database).await{
-                Ok(user) => {
-                    let user_id = user.id.unwrap();
-                    println!("User created");
-                    let new_verification = verification::ActiveModel {
-                        user_id: Set(user_id),
-                        code: Set(generate_six_digit_number()),
-                        expiration: Set(DateTimeWithTimeZone::from(chrono::Utc::now() + chrono::Duration::minutes(5))),
-                        ..Default::default()
-                    };
-
-                    match new_verification.save(&database).await {
-                        Ok(verification) => {
-                            let verification_id = verification.id.unwrap();
-                            println!("Verification created");
-                            (
-                                StatusCode::CREATED,
-                                Json(VerificationData{verification_id})
-                            ).into_response()
-                        },
-                        Err(err) => {
-                            println!("{}", err);
-                            internal_server_error()
-                        }
-                    }
-                },
-                Err(err) => {
-                    println!("{}", err);
-                    internal_server_error()
-                }
-            }
+            let verification_id = generate_uuid4();
+            let mut redis_conn = redis.get().await.expect("Failed to get Redis connection");
+            let _: () = redis_conn.hset_multiple(
+                &verification_id,
+                &*vec![
+                    ("first_name", first_name),
+                    ("last_name", last_name),
+                    ("phone_number", phone_number),
+                    ("code", generate_six_digit_number().to_string())
+                ]).await.unwrap();
+            let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
+            return (
+                StatusCode::CREATED,
+                Json(VerificationData{verification_id})
+            ).into_response()
         }
     }
 }
-
 
 pub fn is_valid_phone_number(phone_number: &str) -> bool{
     if phone_number.starts_with("+998") && phone_number.len() == 13 {

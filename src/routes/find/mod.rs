@@ -1,4 +1,4 @@
-use crate::routes::utils::condition::contains;
+use crate::routes::utils::condition::{contains, equal};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 pub mod sell;
@@ -25,6 +25,28 @@ use sea_orm::entity::*;
 use sea_orm::query::*;
 use crate::database::prelude::ParentWeightItem;
 use crate::routes::utils::condition::starts_with;
+
+pub enum FilterType{
+    Contains,
+    Equal,
+    StartsWith
+}
+
+macro_rules! filter_function {
+    ($filter_type:expr, $text:expr, $column:expr, $is_case_sensitive:expr) => {
+        match $filter_type{
+            FilterType::Equal => {
+                equal($text, $column, $is_case_sensitive)
+            }
+            FilterType::Contains => {
+                contains($text, $column, $is_case_sensitive)
+            }
+            FilterType::StartsWith => {
+                starts_with($text, $column, $is_case_sensitive)
+            }
+        }
+    };
+}
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
@@ -90,14 +112,14 @@ pub struct NoCodeProductsSchema{
     result: Vec<NoCodeProductSchema>
 }
 
-pub async fn find_product(search: String, business_id: i32, database: &DatabaseConnection) -> ProductsSchema{
+pub async fn find_product(search: String, filter_type: FilterType, business_id: i32, database: &DatabaseConnection)-> ProductsSchema{
     let products = Product::find()
         .find_with_related(ParentProduct)
 
         .filter(
             Condition::all()
                 .add(product::Column::BusinessId.eq(business_id))
-                .add(contains(&search, parent_product::Column::Title, false))
+                .add(filter_function!(filter_type, &search, parent_product::Column::Title, false))
         )
 
         .all(database)
@@ -128,6 +150,7 @@ pub async fn find_product(search: String, business_id: i32, database: &DatabaseC
 
 pub async fn find_weight_item(
     search: String,
+    filter_type: FilterType,
     business_id: i32,
     database: &DatabaseConnection
 ) -> WeightItemsSchema{
@@ -142,7 +165,7 @@ pub async fn find_weight_item(
                 .add(
                     Condition::any()
                         // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
-                        .add(contains(&search, parent_weight_item::Column::Title, false))
+                        .add(filter_function!(filter_type, &search, parent_product::Column::Title, false))
                 )
         )
         .all(database)
@@ -173,6 +196,7 @@ pub async fn find_weight_item(
 
 pub async fn find_no_code_product(
     search: String,
+    filter_type: FilterType,
     business_id: i32,
     database: &DatabaseConnection
 ) -> NoCodeProductsSchema{
@@ -185,7 +209,7 @@ pub async fn find_no_code_product(
                 .add(
                     Condition::any()
                         // .add(Expr::expr(Func::lower(Expr::col(parent_weight_item::Column::Title))).like(&like))
-                        .add(contains(&search, parent_no_code_product::Column::Title, false))
+                        .add(filter_function!(filter_type, &search, parent_product::Column::Title, false))
                 )
         )
         .all(database)
