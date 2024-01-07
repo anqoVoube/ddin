@@ -9,7 +9,7 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
 use crate::database::parent_weight_item;
 use crate::database::prelude::ParentWeightItem;
-use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, space_upload::upload_to_space, bad_request};
+use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, bad_request};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use crate::core::auth::middleware::{Auth, CustomHeader};
@@ -44,29 +44,12 @@ pub async fn upload(
         if name.ends_with("images") {
             let file_data: Vec<u8> = field.bytes().await.unwrap().to_vec();
             let file_name = format!("{}.jpg", generate_uuid4());
-            match upload_to_space(file_data, file_name.clone()).await{
-                Ok(_) => {
-                    request_body.images.push(file_name);
-                },
-                Err(err) => {
-                    error!("Error: {:?}", err);
-                    return internal_server_error();
-                }
-            }
+
 
         } else if name.ends_with("main_image") {
             let file_data: Vec<u8> = field.bytes().await.unwrap().to_vec();
             let file_name = format!("{}.jpg", generate_uuid4());
-            match upload_to_space(file_data, file_name.clone()).await{
-                Ok(_) => {
-                    request_body.main_image = Some(file_name);
-                },
-                Err(err) => {
-                    println!("{}", err);
-                    error!("Error: {:?}", err);
-                    return internal_server_error();
-                }
-            }
+
         } else {
             let bytes = field.bytes().await.unwrap();
             let text_data: String = str::from_utf8(&bytes).unwrap().to_string();

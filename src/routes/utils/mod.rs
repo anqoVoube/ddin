@@ -6,6 +6,9 @@ pub mod title_processor;
 pub mod hash_helper;
 pub mod item_type;
 mod db_api;
+pub mod cookie;
+pub mod generate;
+pub mod check;
 // mod get_by_id;
 
 use axum::body::Body;
@@ -13,6 +16,9 @@ use axum::Json;
 use serde::Serialize;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
+use log::error;
+use sea_orm::DbErr;
+use serde::de::Error;
 
 #[derive(Serialize)]
 pub struct ErrorResponse{
@@ -100,6 +106,14 @@ pub fn internal_server_error() -> Response{
         StatusCode::INTERNAL_SERVER_ERROR
     ).into_response()
 }
+
+pub fn internal_server_error_with_log(e: DbErr) -> Response{
+    error!("{:?}", e);
+    (
+        StatusCode::INTERNAL_SERVER_ERROR
+    ).into_response()
+}
+
 
 pub fn response_builder(status: StatusCode, body_text: &str) -> Response<Body>{
     Response::builder()

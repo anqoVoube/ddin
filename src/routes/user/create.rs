@@ -17,9 +17,9 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use crate::RedisPool;
 use crate::routes::AppConnections;
-use crate::routes::utils::hash_helper::generate_uuid4;
+use crate::routes::user::{AuthType, CODE, FIRST_NAME, LAST_NAME, PHONE_NUMBER, TYPE, VerificationData};
+use crate::routes::utils::{check::is_valid_phone_number, generate::six_digit_number, hash_helper::generate_uuid4};
 
-const SESSION_KEY: &str = "session-key";
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
 pub struct Body {
@@ -28,10 +28,7 @@ pub struct Body {
     phone_number: String
 }
 
-#[derive(Serialize, Debug, Clone, Deserialize)]
-pub struct VerificationData {
-    verification_id: String,
-}
+
 
 // #[debug_handler]
 // pub async fn create(
@@ -141,7 +138,6 @@ pub async fn create(
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
     }
-    println!("{:?}", cookies);
     let mut condition = Condition::all();
     condition = condition.add(user::Column::PhoneNumber.eq(phone_number.clone()));
     match User::find().filter(condition).one(&database).await{
@@ -158,29 +154,17 @@ pub async fn create(
             let _: () = redis_conn.hset_multiple(
                 &verification_id,
                 &*vec![
-                    ("first_name", first_name),
-                    ("last_name", last_name),
-                    ("phone_number", phone_number),
-                    ("code", generate_six_digit_number().to_string())
+                    (TYPE, AuthType::Register.to_string()),
+                    (FIRST_NAME, first_name),
+                    (LAST_NAME, last_name),
+                    (PHONE_NUMBER, phone_number),
+                    (CODE, six_digit_number().to_string())
                 ]).await.unwrap();
             let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
             return (
-                StatusCode::CREATED,
+                StatusCode::OK,
                 Json(VerificationData{verification_id})
             ).into_response()
         }
     }
-}
-
-pub fn is_valid_phone_number(phone_number: &str) -> bool{
-    if phone_number.starts_with("+998") && phone_number.len() == 13 {
-        return true;
-    }
-    false
-}
-
-
-pub fn generate_six_digit_number() -> i32 {
-    let mut rng = thread_rng();
-    rng.gen_range(100_000..1_000_000)
 }
