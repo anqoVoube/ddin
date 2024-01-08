@@ -3,6 +3,8 @@ pub mod routes;
 mod database;
 mod core;
 
+use dotenvy_macro::dotenv;
+
 use log::error;
 use scylla::{IntoTypedRows, Session, SessionBuilder};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
@@ -11,10 +13,10 @@ use mongodb::{
     Client,
 };
 
-
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
-pub async fn init_db(database_uri: &str) -> DatabaseConnection{
+pub async fn init_db() -> DatabaseConnection{
+    let database_uri = dotenv!("DATABASE_URI");
     let mut opt = ConnectOptions::new(database_uri);
     opt.max_connections(100)
         .min_connections(5);
@@ -96,8 +98,8 @@ pub async fn init_barcode_sqlite() -> rusqlite::Connection{
     rusqlite::Connection::open("barcodes.db").expect("Failed to open database")
 }
 
-pub async fn run(database_uri: &str, redis_uri: &str, scylla_uri: &str, mongo_uri: &str, running_port: &str){
-    let database = init_db(database_uri).await;
+pub async fn run(redis_uri: &str, scylla_uri: &str, mongo_uri: &str, running_port: &str){
+    let database = init_db().await;
     let redis = init_redis(redis_uri).await;
     let scylla = init_scylla(scylla_uri).await;
     let mongo = init_mongo(mongo_uri).await;

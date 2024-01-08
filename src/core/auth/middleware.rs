@@ -184,7 +184,7 @@ pub async fn validate_business_id<B>(
                             if business_instance.owner_id == *user_id{
                                 Ok(next.run(request).await)
                             } else {
-                                Err(create_response(StatusCode::UNAUTHORIZED, "Authorization failed"))
+                                Err(create_response(StatusCode::UNAUTHORIZED, "Authorization failed. You are not owner of requesting business"))
                             }
                         },
                         _ => Err(create_response(StatusCode::NOT_ACCEPTABLE, "Not acceptable request"))
