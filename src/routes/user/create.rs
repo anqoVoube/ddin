@@ -135,6 +135,7 @@ pub async fn create(
     cookies: Cookies,
     Json(Body{ first_name, last_name, phone_number}): Json<Body>,
 ) -> Response {
+    println!("{} {} {}", first_name, last_name, phone_number);
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
     }

@@ -27,7 +27,7 @@ pub struct Body {
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
-    Extension(headers): Extension<CustomHeader>,
+    Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Json(Body {parent_id, quantity, orig_price, price, produced_date, expiration_date}): Json<Body>
 ) -> Result<Response, Response> {
     println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
@@ -40,7 +40,7 @@ pub async fn create(
             match Product::find()
                 .filter(
                     Condition::all()
-                        .add(product::Column::BusinessId.eq(headers.business_id))
+                        .add(product::Column::BusinessId.eq(business_id))
                         .add(product::Column::ExpirationDate.eq(expiration_date))
                         .add(product::Column::ParentId.eq(parent_product.id))
                 )
@@ -66,10 +66,9 @@ pub async fn create(
                         price: Set(price),
                         profit: Set(price - orig_price),
                         expiration_date: Set(Some(expiration_date)),
-                        business_id: Set(headers.business_id),
+                        business_id: Set(business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),
                         parent_id: Set(parent_id),
-                        is_accessible: Set(true),
                         ..Default::default()
                     };
 

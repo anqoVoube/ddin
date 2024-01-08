@@ -14,6 +14,7 @@ pub struct Model {
     pub parent_id: i32,
     pub profit: i32,
     pub is_accessible: bool,
+    pub discount: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

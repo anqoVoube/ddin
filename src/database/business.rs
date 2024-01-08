@@ -13,6 +13,7 @@ pub struct Model {
     pub works_until: Time,
     pub is_closed: bool,
     pub owner_id: i32,
+    pub has_full_access: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

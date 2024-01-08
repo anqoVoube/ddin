@@ -14,7 +14,7 @@ macro_rules! define_model {
 macro_rules! create_model {
     ($m:ident, $db:expr, $($e:ident),+) => {
         {
-            let creating_instance = define_model!($m, $($e),+);
+            let creating_instance = crate::define_model!($m, $($e),+);
             match creating_instance.save($db).await{
                 Ok(user) => Ok(user),
                 Err(e) => Err(e)
