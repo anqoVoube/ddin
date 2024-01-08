@@ -119,7 +119,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .nest("/no-code-product", no_code_product_router())
         .nest("/statistics", statistics_router())
         .route_layer(middleware::from_fn_with_state(connections.clone(), validate_business_id))
-        .route_layer(middleware::from_fn_with_state(connections.clone(), business_getter))
+        .route_layer(middleware::from_fn(business_getter))
         .nest("/business", business_router())
 
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))

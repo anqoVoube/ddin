@@ -1,9 +1,10 @@
 use rand::{Rng, thread_rng};
 use uuid::Uuid;
 
-pub fn six_digit_number() -> i32 {
+pub fn six_digit_number() -> String {
     let mut rng = thread_rng();
-    rng.gen_range(100_000..1_000_000)
+    let number = rng.gen_range(0..1_000_000);
+    format!("{:0>width$}", number, width = 6)
 }
 
 

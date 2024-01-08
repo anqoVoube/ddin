@@ -170,7 +170,7 @@ fn create_response(status_code: StatusCode, body_text: &str) -> Response<Body> {
 
 pub async fn validate_business_id<B>(
     State(connections): State<AppConnections>,
-    mut request: Request<B>,
+    request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{
     let auth = request.extensions().get::<Auth>();
@@ -236,7 +236,6 @@ pub async fn auth_getter<B>(
 }
 
 pub async fn business_getter<B>(
-    State(connections): State<AppConnections>,
     mut request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{

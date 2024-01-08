@@ -53,11 +53,11 @@ pub async fn create(
                     product.quantity = Set(adding_quantity + quantity.unwrap_or(1) as i32);
                     match product.update(&database).await {
                         Ok(_) => {
-                            return Ok(default_created());
+                            Ok(default_created())
                         },
                         Err(error) => {
                             error!("Couldn't update product with id. Original error is: {}", error);
-                            return Err(internal_server_error());
+                            Err(internal_server_error())
                         }
                     }
                 },
@@ -75,11 +75,11 @@ pub async fn create(
                     match new_product.save(&database).await {
                         Ok(instance) => {
                             info!("{:?}", instance);
-                            return Ok(default_created());
+                            Ok(default_created())
                         },
                         Err(error) => {
                             error!("Unable to create {:?}. Original error was {}", 1, error);
-                            return Err(internal_server_error());
+                            Err(internal_server_error())
                         }
                     }
                 }
@@ -87,7 +87,7 @@ pub async fn create(
         },
         Err(error) => {
             error!("Couldn't fetch parent_product with id: {}. Original error is: {}", parent_id, error);
-            return Err(internal_server_error());
+            Err(internal_server_error())
         }
     }
 }

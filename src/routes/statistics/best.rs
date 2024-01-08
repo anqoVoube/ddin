@@ -44,36 +44,6 @@ impl NaiveDateExt for chrono::NaiveDate {
     }
 }
 
-fn create_vector(min: u32, max: u32) -> Vec<String> {
-    let mut vector: Vec<String> = Vec::new();
-    for number in min..=max {
-        vector.push(number.to_string());
-    }
-    vector
-}
-
-fn week_vector() -> Vec<String> {
-    vec!("Mon".to_string(), "Tue".to_string(), "Wed".to_string(), "Thu".to_string(), "Fri".to_string(), "Sat".to_string(), "Sun".to_string())
-}
-
-fn month_vector() -> Vec<String> {
-    vec!(
-        "1".to_string(),
-        "2".to_string(),
-        "3".to_string(),
-        "4".to_string(),
-        "5".to_string(),
-        "6".to_string(),
-        "7".to_string(),
-        "8".to_string(),
-        "9".to_string(),
-        "10".to_string(),
-        "11".to_string(),
-        "12".to_string()
-    )
-}
-
-
 
 #[derive(Serialize)]
 pub struct StatisticsResponse{

@@ -27,7 +27,7 @@ use sea_orm::{ColumnTrait, QueryFilter};
 #[derive(Deserialize)]
 pub struct Body {
     verification_id: String,
-    verification_code: i32
+    verification_code: String
 }
 
 // #[debug_handler]
@@ -108,7 +108,7 @@ pub async fn verify(
     let auth_type = data.remove(TYPE).unwrap();
     let code = data.remove(CODE).unwrap();
     // TODO: use real code
-    if verification_code == 123456 {
+    if verification_code == "123456" {
         match AuthType::from_str(&auth_type).unwrap() {
             AuthType::Register => {
                 let (first_name, last_name, phone_number, is_verified) = (

@@ -17,11 +17,6 @@ use crate::database::{no_code_product, product, rent, rent_history, weight_item}
 use crate::routes::ScyllaDBConnection;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
-fn default_as_false() -> bool {
-    false
-}
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductBody {
     id: i32,

@@ -159,7 +159,7 @@ pub async fn create(
                     (FIRST_NAME, first_name),
                     (LAST_NAME, last_name),
                     (PHONE_NUMBER, phone_number),
-                    (CODE, six_digit_number().to_string())
+                    (CODE, six_digit_number())
                 ]).await.unwrap();
             let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
             return (
