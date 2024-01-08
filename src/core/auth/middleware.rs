@@ -181,6 +181,7 @@ pub async fn validate_business_id<B>(
                 Some(CustomHeader{business_id}) => {
                     match Business::find_by_id(*business_id).one(&connections.database).await {
                         Ok(Some(business_instance)) => {
+                            println!("OwnerID: {}, UserID: {}", business_instance.owner_id, *user_id);
                             if business_instance.owner_id == *user_id{
                                 Ok(next.run(request).await)
                             } else {
