@@ -173,6 +173,7 @@ pub async fn validate_business_id<B>(
     request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, Response<Body>>{
+    println!("Request uri: {}", request.uri());
     let auth = request.extensions().get::<Auth>();
     let custom_headers = request.extensions().get::<CustomHeader>();
     match auth {
