@@ -26,30 +26,28 @@ use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 
 
-use axum::routing::{get, post, put};
+use axum::routing::{get, post};
 use axum::http::{Method, header};
 use http::HeaderName;
-use mongodb::{Collection, Database};
-use redis::aio::Connection;
+use mongodb::Database;
 
 use scylla::Session;
 use sea_orm::DatabaseConnection;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{Any, CorsLayer};
-use crate::core::auth::middleware::{Auth, auth_getter, business_getter, validate_business_id};
+use tower_http::cors::CorsLayer;
+use crate::core::auth::middleware::{auth_getter, business_getter, validate_business_id};
 use crate::RedisPool;
-use crate::routes::business::create::create;
 use crate::routes::business::router::get_router as business_router;
 use crate::routes::check::check_title_uniqueness;
 use crate::routes::find::router::get_router as find_router;
 use crate::routes::user::router::get_router as user_router;
 use crate::routes::parent_product::router::get_router as parent_product_router;
 use crate::routes::ping::ping;
-use crate::routes::find::sell::search;
 use crate::routes::product::router::get_router as product_router;
 use crate::routes::no_code_product::router::get_router as no_code_product_router;
 use crate::routes::statistics::router::get_router as statistics_router;
+use crate::routes::debts::router::get_router as debts_router;
 use crate::routes::utils::media::media_path;
 use crate::routes::weight_item::create::create as create_weight_item;
 use crate::routes::sell::sell;
@@ -102,9 +100,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/request-no-photo", post(product_request::upload_without_photo))
         .route("/expirations", get(expiration::get_expirations))
         .route("/update", post(update::update_product))
-        .route("/debts", get(debts::find::full_serializer_search).post(debts::create::create))
-        .route("/debts/payment", post(debts::update::update))
-        .route("/debts/history/:id", get(debts::history::get_history))
+
 
         .route("/add-parent/weight-item", post(parent_weight_item::create::upload))
         .route("/add-parent/no-code-product", post(parent_no_code_product::create::upload))
@@ -113,6 +109,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/sell", post(sell))
         .route("/check-title", get(check_title_uniqueness))
         .nest("/find", find_router())
+        .nest("/debts", debts_router())
         // .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
