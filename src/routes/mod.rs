@@ -72,18 +72,18 @@ pub struct SqliteDBConnection {
 
 
 pub fn v1_routes(connections: AppConnections) -> Router{
-    // let origins = [
-    //     "https://ddin.uz".parse().unwrap(),
-    //     "https://api.ddin.uz".parse().unwrap(),
-    //     "81.95.230.194".parse().unwrap(),
-    //     "http://81.95.230.194".parse().unwrap(),
-    //     "84.54.122.78".parse().unwrap(),
-    //     "http://84.54.122.78".parse().unwrap()
-    // ];
+    let origins = [
+        "https://ddin.uz".parse().unwrap(),
+        "https://api.ddin.uz".parse().unwrap(),
+        "81.95.230.194".parse().unwrap(),
+        "http://81.95.230.194".parse().unwrap(),
+        "84.54.122.78".parse().unwrap(),
+        "http://84.54.122.78".parse().unwrap()
+    ];
 
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
-        .allow_origin(Any)
+        .allow_origin(origins)
         .allow_headers(vec![
             header::AUTHORIZATION,
             header::ACCEPT,
@@ -93,8 +93,8 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
             HeaderName::from_lowercase(b"no_add_token").unwrap(),
-        ]);
-        // .allow_credentials(true);
+        ])
+        .allow_credentials(true);
 
     Router::new()
         .route("/ping", get(ping))

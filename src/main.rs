@@ -1,4 +1,3 @@
-use dotenvy_macro::dotenv;
 use dotenvy::dotenv;
 use updddin::run;
 

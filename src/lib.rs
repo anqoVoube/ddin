@@ -19,13 +19,13 @@ use teloxide::dispatching::dialogue::InMemStorage;
 use teloxide::dispatching::{Dispatcher, HandlerExt, UpdateFilterExt};
 use teloxide::error_handlers::LoggingErrorHandler;
 use teloxide::prelude::{Message, Update};
-use teloxide::update_listeners::webhooks;
 use teloxide::update_listeners::webhooks::{axum_no_setup, Options};
-use crate::bot::OPTIONS;
+use once_cell::sync::OnceCell;
 
 
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
+static POSTGRES_CONNECTION: OnceCell<DatabaseConnection> = OnceCell::new();
 
 #[derive(Clone, Default)]
 pub enum State {
@@ -137,8 +137,20 @@ pub async fn init_barcode_sqlite() -> rusqlite::Connection{
 
 pub async fn init_bot() -> Router{
     let bot = Bot::new(dotenv!("BOT_TOKEN"));
-    let (listener, stop_flag, router) = axum_no_setup(
-        OPTIONS
+    let options = Options {
+        address: ([0, 0, 0, 0], 3000).into(),
+        url: "https://ddin.uz/webhook".parse().unwrap(),
+        certificate: None,
+        max_connections: None,
+        drop_pending_updates: false,
+        secret_token: Some(String::from(dotenv!("TELEGRAM_SECRET_TOKEN")))
+    };
+    let (
+        listener,
+        stop_flag,
+        router
+    ) = axum_no_setup(
+        options
     );
 
     tokio::spawn(async move {
@@ -164,11 +176,13 @@ pub async fn init_bot() -> Router{
 
 pub async fn run(){
     let database = init_db().await;
+    // DB Connection For Telegram Bot
+    POSTGRES_CONNECTION.set(database.clone()).unwrap();
     let redis = init_redis().await;
     let scylla = init_scylla().await;
     let mongo = init_mongo().await;
     let sqlite = init_barcode_sqlite().await;
-    let bot_axum_router = init_bot();
+    let bot_axum_router = init_bot().await;
     log::info!("Starting dialogue bot..");
 
     let app = create_routes(database, redis, scylla, mongo, sqlite, bot_axum_router);

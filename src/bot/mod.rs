@@ -7,14 +7,6 @@ use teloxide::types::{ButtonRequest, KeyboardButton, KeyboardMarkup};
 use teloxide::update_listeners::webhooks::Options;
 
 
-pub const OPTIONS: Options = Options {
-    address: ([0, 0, 0, 0], 3000).into(),
-    url: "https://ddin.uz/webhook".parse().unwrap(),
-    certificate: None,
-    max_connections: None,
-    drop_pending_updates: false,
-    secret_token: Some(dotenv!("TELEGRAM_SECRET_TOKEN").to_owned())
-};
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
