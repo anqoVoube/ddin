@@ -65,12 +65,18 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                         .filter(condition)
                         .all(POSTGRES_CONNECTION.get().unwrap())
                         .await?;
-                    let buttons: Vec<[InlineKeyboardButton; 1]> = businesses
-                        .into_iter()
-                        .map(|x| [InlineKeyboardButton::callback(&x.title, format!("business_{}", &x.id))])
-                        .collect();
-                    let markup = InlineKeyboardMarkup::new(buttons);
-                    bot.send_message(msg.chat.id, "Home").reply_markup(markup).await?;
+                    if buttons.len() == 1{
+                        todo!()
+                    } else {
+                        let buttons: Vec<[InlineKeyboardButton; 1]> = businesses
+                            .into_iter()
+                            .map(|x| [InlineKeyboardButton::callback(&x.title, format!("business_{}", &x.id))])
+                            .collect();
+
+                        let markup = InlineKeyboardMarkup::new(buttons);
+                        bot.send_message(msg.chat.id, "Home").reply_markup(markup).await?;
+                    }
+
                 },
                 Ok(None) => println!("Not found"),
                 Err(e) => println!("Error, {:?}", e)
