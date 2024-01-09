@@ -2,7 +2,9 @@
 pub mod routes;
 mod database;
 mod core;
+pub mod bot;
 
+use axum::Router;
 use dotenvy_macro::dotenv;
 
 use log::error;
@@ -12,20 +14,48 @@ use routes::create_routes;
 use mongodb::{
     Client,
 };
+use teloxide::{Bot, dptree};
+use teloxide::dispatching::dialogue::InMemStorage;
+use teloxide::dispatching::{Dispatcher, HandlerExt, UpdateFilterExt};
+use teloxide::error_handlers::LoggingErrorHandler;
+use teloxide::prelude::{Message, Update};
+use teloxide::update_listeners::webhooks;
+use teloxide::update_listeners::webhooks::{axum_no_setup, Options};
+use crate::bot::OPTIONS;
+
 
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
+
+#[derive(Clone, Default)]
+pub enum State {
+    #[default]
+    Start,
+    ReceiveFullName,
+    ReceiveAge {
+        full_name: String,
+    },
+    ReceiveLocation {
+        full_name: String,
+        age: u8,
+    },
+}
+
+
 pub async fn init_db() -> DatabaseConnection{
-    let database_uri = dotenv!("DATABASE_URI");
-    let mut opt = ConnectOptions::new(database_uri);
+    let mut opt = ConnectOptions::new(
+        dotenv!("DATABASE_URI")
+    );
     opt.max_connections(100)
         .min_connections(5);
 
     Database::connect(opt).await.expect("Failed to create Postgres connection")
 }
 
-pub async fn init_redis(redis_uri: &str) -> RedisPool {
-    let manager = match bb8_redis::RedisConnectionManager::new(redis_uri) {
+pub async fn init_redis() -> RedisPool {
+    let manager = match bb8_redis::RedisConnectionManager::new(
+        dotenv!("REDIS_URI")
+    ) {
         Ok(manager) => manager,
         Err(e) => {
             error!("Failed to create Redis connection manager: {}", e);
@@ -39,9 +69,11 @@ pub async fn init_redis(redis_uri: &str) -> RedisPool {
 }
 
 
-pub async fn init_scylla(scylla_url: &str) -> Session{
+pub async fn init_scylla() -> Session{
    let session = SessionBuilder::new()
-       .known_node(scylla_url)
+       .known_node(
+           dotenv!("SCYLLA_URI")
+       )
        .build()
        .await
        .expect("Failed to create ScyllaDB session");
@@ -89,23 +121,59 @@ pub async fn init_scylla(scylla_url: &str) -> Session{
 }
 
 
-pub async fn init_mongo(mongo_uri: &str) -> mongodb::Database{
-    let client = Client::with_uri_str(mongo_uri).await.expect("Failed to create MongoDB client");
+pub async fn init_mongo() -> mongodb::Database{
+    let client = Client::with_uri_str(
+        dotenv!("MONGO_URI")
+    ).await.expect("Failed to create MongoDB client");
     client.database("history")
 }
 
 pub async fn init_barcode_sqlite() -> rusqlite::Connection{
-    rusqlite::Connection::open("barcodes.db").expect("Failed to open database")
+    rusqlite::Connection::open(
+        dotenv!("SQLITE_DB_NAME")
+    ).expect("Failed to open database")
 }
 
-pub async fn run(redis_uri: &str, scylla_uri: &str, mongo_uri: &str, running_port: &str){
+
+pub async fn init_bot() -> Router{
+    let bot = Bot::new(dotenv!("BOT_TOKEN"));
+    let (listener, stop_flag, router) = axum_no_setup(
+        OPTIONS
+    );
+
+    tokio::spawn(async move {
+        Dispatcher::builder(
+            bot,
+            Update::filter_message()
+                .enter_dialogue::<Message, InMemStorage<State>, State>()
+                .branch(dptree::case![State::Start].endpoint(bot::start))
+                .branch(dptree::case![State::ReceiveFullName].endpoint(bot::receive_full_name))
+        )
+            .dependencies(dptree::deps![InMemStorage::<State>::new()])
+            .enable_ctrlc_handler()
+            .build()
+            .dispatch_with_listener(
+                listener,
+                LoggingErrorHandler::with_custom_text("An error from the update listener"),
+            )
+            .await;
+        }
+    );
+    router
+}
+
+pub async fn run(){
     let database = init_db().await;
-    let redis = init_redis(redis_uri).await;
-    let scylla = init_scylla(scylla_uri).await;
-    let mongo = init_mongo(mongo_uri).await;
+    let redis = init_redis().await;
+    let scylla = init_scylla().await;
+    let mongo = init_mongo().await;
     let sqlite = init_barcode_sqlite().await;
-    let app = create_routes(database, redis, scylla, mongo, sqlite);
-    let url = format!("0.0.0.0:{}", running_port);
+    let bot_axum_router = init_bot();
+    log::info!("Starting dialogue bot..");
+
+    let app = create_routes(database, redis, scylla, mongo, sqlite, bot_axum_router);
+    let url = format!("0.0.0.0:{}", dotenv!("API_PORT"));
+
     axum::Server::bind(&url.parse().unwrap())
         .serve(app.into_make_service())
         .await

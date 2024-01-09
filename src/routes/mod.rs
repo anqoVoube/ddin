@@ -33,9 +33,11 @@ use mongodb::Database;
 
 use scylla::Session;
 use sea_orm::DatabaseConnection;
+use teloxide::update_listeners::webhooks;
+use teloxide::update_listeners::webhooks::Options;
 use tokio::sync::Mutex;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use crate::core::auth::middleware::{auth_getter, business_getter, validate_business_id};
 use crate::RedisPool;
 use crate::routes::business::router::get_router as business_router;
@@ -70,18 +72,18 @@ pub struct SqliteDBConnection {
 
 
 pub fn v1_routes(connections: AppConnections) -> Router{
-    let origins = [
-        "https://ddin.uz".parse().unwrap(),
-        "https://api.ddin.uz".parse().unwrap(),
-        "81.95.230.194".parse().unwrap(),
-        "http://81.95.230.194".parse().unwrap(),
-        "84.54.122.78".parse().unwrap(),
-        "http://84.54.122.78".parse().unwrap()
-    ];
+    // let origins = [
+    //     "https://ddin.uz".parse().unwrap(),
+    //     "https://api.ddin.uz".parse().unwrap(),
+    //     "81.95.230.194".parse().unwrap(),
+    //     "http://81.95.230.194".parse().unwrap(),
+    //     "84.54.122.78".parse().unwrap(),
+    //     "http://84.54.122.78".parse().unwrap()
+    // ];
 
     let cors = CorsLayer::new()
         .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
-        .allow_origin(origins)
+        .allow_origin(Any)
         .allow_headers(vec![
             header::AUTHORIZATION,
             header::ACCEPT,
@@ -91,8 +93,8 @@ pub fn v1_routes(connections: AppConnections) -> Router{
             header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
             HeaderName::from_lowercase(b"x-business-id").unwrap(),
             HeaderName::from_lowercase(b"no_add_token").unwrap(),
-        ])
-        .allow_credentials(true);
+        ]);
+        // .allow_credentials(true);
 
     Router::new()
         .route("/ping", get(ping))
@@ -129,7 +131,15 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 }
 
 
-pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Session, mongo: Database, sqlite: rusqlite::Connection) -> Router<(), Body> {
+pub fn create_routes(
+    database: DatabaseConnection,
+    redis: RedisPool,
+    scylla: Session,
+    mongo: Database,
+    sqlite: rusqlite::Connection,
+    router: Router
+) -> Router<(), Body> {
+
     let connections = AppConnections{redis: redis.clone(), database: database.clone()};
     let scylla_connection = ScyllaDBConnection{
         scylla: Arc::new(scylla)
@@ -148,4 +158,5 @@ pub fn create_routes(database: DatabaseConnection, redis: RedisPool, scylla: Ses
         .layer(Extension(mongo))
         .layer(Extension(sqlite_connection))
         .layer(CookieManagerLayer::new())
+        .nest("/", router)
 }

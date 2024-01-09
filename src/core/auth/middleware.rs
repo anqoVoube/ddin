@@ -204,9 +204,6 @@ pub async fn validate_business_id<B>(
 }
 
 
-// Combining every possible error into one type for safety reasons
-
-
 pub async fn auth_getter<B>(
     State(connections): State<AppConnections>,
     cookies: Cookies,
