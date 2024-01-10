@@ -157,12 +157,15 @@ pub async fn init_bot() -> Router{
         Dispatcher::builder(
             bot,
             Update::filter_message()
+                .branch(
+                    Update::filter_callback_query()
+                        .endpoint(bot::handle_callback_query)
+                )
                 .enter_dialogue::<Message, InMemStorage<State>, State>()
                 .branch(dptree::case![State::Start].endpoint(bot::start))
                 .branch(dptree::case![State::ReceiveFullName].endpoint(bot::receive_full_name))
         )
-            .dependencies(dptree::deps![InMemStorage::<State>::new()])
-            .enable_ctrlc_handler()
+            // .dependencies(dptree::deps![InMemStorage::<State>::new()])
             .build()
             .dispatch_with_listener(
                 listener,

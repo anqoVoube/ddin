@@ -1,9 +1,9 @@
-use http::StatusCode;
+use std::error::Error;
 use sea_orm::{Condition, EntityTrait};
 use teloxide::Bot;
 use teloxide::dispatching::dialogue::InMemStorage;
 use teloxide::payloads::SendMessageSetters;
-use teloxide::prelude::{Dialogue, Message, Requester};
+use teloxide::prelude::{CallbackQuery, Dialogue, Message, Request, Requester, ResponseResult};
 use teloxide::types::{ButtonRequest, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
 use crate::database::prelude::{Business, User};
 use crate::database::{business, user};
@@ -14,7 +14,6 @@ use serde::Serialize;
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
-
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
     id: i32,
@@ -56,7 +55,7 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
         Some(contact) => {
             println!("{}", contact.phone_number);
             let mut condition = Condition::all();
-            condition = condition.add(user::Column::PhoneNumber.eq(contact.phone_number.clone()));
+            condition = condition.add(user::Column::PhoneNumber.eq(format!("+{}", contact.phone_number.clone())));
             match User::find().filter(condition).one(POSTGRES_CONNECTION.get().unwrap()).await{
                 Ok(Some(user)) => {
                     let mut condition = Condition::all();
@@ -65,8 +64,19 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                         .filter(condition)
                         .all(POSTGRES_CONNECTION.get().unwrap())
                         .await?;
-                    if buttons.len() == 1{
-                        todo!()
+                    if businesses.len() == 1{
+                        let working_business = businesses.first().unwrap();
+                        if working_business.has_full_access{
+                            let markup = InlineKeyboardMarkup::new([
+                                [InlineKeyboardButton::callback("Закрыть статистику", format!("hide_{}", working_business.id))]
+                            ]);
+                            bot.send_message(msg.chat.id, "Статус Статистики: Открытый 📖").reply_markup(markup).await?;
+                        } else {
+                            let markup = InlineKeyboardMarkup::new([
+                                [InlineKeyboardButton::callback("Открыть статистику", format!("open_{}", working_business.id))]
+                            ]);
+                            bot.send_message(msg.chat.id, "Статус Статистики: Закрытый 📕").reply_markup(markup).await?;
+                        }
                     } else {
                         let buttons: Vec<[InlineKeyboardButton; 1]> = businesses
                             .into_iter()
@@ -88,5 +98,39 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
             bot.send_message(msg.chat.id, "Send me plain text.").await?;
         }
     }
+    Ok(())
+}
+
+
+pub async fn handle_callback_query(
+    bot: Bot,
+    dialogue: Dialogue<State, InMemStorage<State>>,
+    query: CallbackQuery,
+    // Other dependencies if required
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    // Check if the callback query has data
+    if let Some(data) = query.data {
+        println!("{}", data);
+        match data.as_str() {
+            // Handle different callback data
+            "some_callback_data" => {
+                // Perform actions based on the callback data
+                // For example, send a message or update dialogue state
+                bot.send_message(query.message.unwrap().chat.id, "You selected an option!").await?;
+            },
+            // Handle other callback data cases
+            _ => {
+                // Handle unknown or unexpected callback data
+                bot.send_message(query.message.unwrap().chat.id, "Unknown option selected.").await?;
+            }
+        }
+    } else {
+        // No callback data present, send an error message or handle accordingly
+        bot.send_message(query.message.unwrap().chat.id, "No data received from button.").await?;
+    }
+
+    // Optionally, you can also answer the callback query to stop the loading animation on the button
+    bot.answer_callback_query(&query.id).send().await?;
+
     Ok(())
 }
