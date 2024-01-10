@@ -47,7 +47,8 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
         Some(contact) => {
             println!("{}", contact.phone_number);
             let mut condition = Condition::all();
-            condition = condition.add(user::Column::PhoneNumber.eq(format!("+{}", contact.phone_number.clone())));
+            let phone_number = if contact.phone_number.starts_with("+") {contact.phone_number.clone()} else {format!("+{}", &contact.phone_number)};
+            condition = condition.add(user::Column::PhoneNumber.eq(format!("{}", phone_number)));
             match User::find().filter(condition).one(POSTGRES_CONNECTION.get().unwrap()).await{
                 Ok(Some(user)) => {
                     let mut condition = Condition::all();
