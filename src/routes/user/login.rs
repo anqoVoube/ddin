@@ -134,7 +134,7 @@ pub async fn login(
                 Ok(verification_id) => verification_id.to_string(),
                 Err(_) => {
                     let verification_id = generate::uuid4();
-                    let _: () = redis_conn.set(user_id, &verification_id).await.unwrap();
+                    let _: () = redis_conn.set(&user_id, &verification_id).await.unwrap();
                     let _: () = redis_conn.hset_multiple(
                         &verification_id,
                         &*vec![
@@ -142,7 +142,7 @@ pub async fn login(
                             (PHONE_NUMBER, phone_number),
                             (CODE, generate::six_digit_number())
                         ]).await.unwrap();
-                    let _: () = redis_conn.expire(&user_id, 300).await.unwrap();
+                    let _: () = redis_conn.expire(user_id, 300).await.unwrap();
                     let _: () = redis_conn.expire(&verification_id, 360).await.unwrap();
                     verification_id
                 }
