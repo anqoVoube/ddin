@@ -97,7 +97,6 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .allow_credentials(true);
 
     Router::new()
-        .route("/ping", get(ping))
         .route("/request", post(product_request::upload))
         .route("/request-no-photo", post(product_request::upload_without_photo))
         .route("/expirations", get(expiration::get_expirations))
@@ -120,6 +119,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route_layer(middleware::from_fn_with_state(connections.clone(), validate_business_id))
         .route_layer(middleware::from_fn(business_getter))
         .nest("/business", business_router())
+        .route("/ping", get(ping))
 
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
 
