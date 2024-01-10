@@ -7,7 +7,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 use crate::database::prelude::User;
 use crate::database::user;
-use crate::routes::utils::{bad_request, cookie, default_ok, internal_server_error, internal_server_error_with_log, not_found};
+use crate::routes::utils::{bad_request, cookie, default_ok, generate, internal_server_error, internal_server_error_with_log, not_found};
 use sea_orm::ActiveValue::Set;
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -53,8 +53,9 @@ pub async fn verify(
                 match create_model!(ActiveModel, &database, first_name, last_name, phone_number, is_verified) {
                     Ok(user) => {
                         let user_id = user.id.unwrap().to_string();
-                        let _: () = redis_conn.set(&user_id, &user_id).await.unwrap();
-                        cookies.add(cookie::create(user_id));
+                        let session_key = generate::uuid4();
+                        let _: () = redis_conn.set(&session_key, &user_id).await.unwrap();
+                        cookies.add(cookie::create(session_key));
                         default_ok()
                     },
                     Err(e) => {
@@ -70,8 +71,9 @@ pub async fn verify(
                 match User::find().filter(condition).one(&database).await{
                     Ok(Some(user)) => {
                         let user_id = user.id.to_string();
-                        let _: () = redis_conn.set(&user_id, &user_id).await.unwrap();
-                        cookies.add(cookie::create(user_id));
+                        let session_key = generate::uuid4();
+                        let _: () = redis_conn.set(&session_key, &user_id).await.unwrap();
+                        cookies.add(cookie::create(session_key));
                         default_ok()
                     },
                     Ok(None) => not_found(),
