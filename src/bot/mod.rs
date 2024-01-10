@@ -12,18 +12,15 @@ use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use serde::Serialize;
 
+
+
+
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 #[derive(Serialize, Debug)]
 pub struct BusinessSchema {
     id: i32,
     title: String,
-    // location: Vec<Decimal>,
-    // works_from: NaiveTime,
-    // works_until: NaiveTime,
-    // #[serde(default="default_as_false")]
-    // is_closed: bool,
-    // owner_id: i32
 }
 
 impl From<business::Model> for BusinessSchema {
@@ -31,11 +28,6 @@ impl From<business::Model> for BusinessSchema {
         BusinessSchema {
             id: business.id,
             title: business.title,
-            // location: business.location,
-            // works_from: business.works_from,
-            // works_until: business.works_until,
-            // is_closed: business.is_closed,
-            // owner_id: business.owner_id
         }
     }
 }
@@ -46,7 +38,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
     ]).resize_keyboard(true);
 
     bot.send_message(msg.chat.id, "Привет! Отправьте Ваши контакты").reply_markup(keyboard).await?;
-    dialogue.update(State::ReceiveFullName).await?;
+    dialogue.update(State::ReceiveContact).await?;
     Ok(())
 }
 
@@ -91,8 +83,8 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                 Ok(None) => println!("Not found"),
                 Err(e) => println!("Error, {:?}", e)
             }
-            bot.send_message(msg.chat.id, "How old are you?").await?;
-            dialogue.exit().await.unwrap();
+            // bot.send_message(msg.chat.id, "How old are you?").await?;
+            dialogue.update(State::ChooseBusiness).await?;
         }
         None => {
             bot.send_message(msg.chat.id, "Send me plain text.").await?;
@@ -104,10 +96,11 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
 
 pub async fn handle_callback_query(
     bot: Bot,
-    dialogue: Dialogue<State, InMemStorage<State>>,
+    dialogue: MyDialogue,
+    // full_name: String, // Available from `State::ReceiveProductChoice`.
     query: CallbackQuery,
-    // Other dependencies if required
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    println!("{:?}", query);
     // Check if the callback query has data
     if let Some(data) = query.data {
         println!("{}", data);

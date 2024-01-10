@@ -15,30 +15,37 @@ use mongodb::{
     Client,
 };
 use teloxide::{Bot, dptree};
-use teloxide::dispatching::dialogue::InMemStorage;
-use teloxide::dispatching::{Dispatcher, HandlerExt, UpdateFilterExt};
-use teloxide::error_handlers::LoggingErrorHandler;
-use teloxide::prelude::{Message, Update};
+use teloxide::prelude::{Message, Requester, Update};
 use teloxide::update_listeners::webhooks::{axum_no_setup, Options};
 use once_cell::sync::OnceCell;
+use teloxide::payloads::SendMessageSetters;
 
+use teloxide::{
+    dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
+    prelude::*,
+    utils::command::BotCommands,
+};
 
+type MyDialogue = Dialogue<State, InMemStorage<State>>;
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 type RedisPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
 
 static POSTGRES_CONNECTION: OnceCell<DatabaseConnection> = OnceCell::new();
+
 
 #[derive(Clone, Default)]
 pub enum State {
     #[default]
     Start,
-    ReceiveFullName,
-    ReceiveAge {
-        full_name: String,
-    },
-    ReceiveLocation {
-        full_name: String,
-        age: u8,
-    },
+    // ReceiveAge {
+    //     full_name: String,
+    // },
+    // ReceiveLocation {
+    //     full_name: String,
+    //     age: u8,
+    // },
+    ReceiveContact,
+    ChooseBusiness,
 }
 
 
@@ -143,8 +150,9 @@ pub async fn init_bot() -> Router{
         certificate: None,
         max_connections: None,
         drop_pending_updates: false,
-        secret_token: Some(String::from(dotenv!("TELEGRAM_SECRET_TOKEN")))
+        secret_token: None,
     };
+
     let (
         listener,
         stop_flag,
@@ -153,20 +161,32 @@ pub async fn init_bot() -> Router{
         options
     );
 
+    fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use dptree::case;
+
+
+        let message_handler = Update::filter_message()
+            .enter_dialogue::<Message, InMemStorage<State>, State>()
+            .branch(dptree::case![State::Start].endpoint(bot::start))
+            .branch(dptree::case![State::ReceiveContact].endpoint(bot::receive_full_name));
+
+        let callback_query_handler = Update::filter_callback_query()
+            .branch(case![State::ChooseBusiness])
+            .endpoint(bot::handle_callback_query);
+
+        dialogue::enter::<Update, InMemStorage<State>, State, _>()
+            .branch(message_handler)
+            .branch(callback_query_handler)
+    }
+
     tokio::spawn(async move {
         Dispatcher::builder(
             bot,
-            Update::filter_message()
-                .branch(
-                    Update::filter_callback_query()
-                        .endpoint(bot::handle_callback_query)
-                )
-                .enter_dialogue::<Message, InMemStorage<State>, State>()
-                .branch(dptree::case![State::Start].endpoint(bot::start))
-                .branch(dptree::case![State::ReceiveFullName].endpoint(bot::receive_full_name))
+            schema()
         )
-            // .dependencies(dptree::deps![InMemStorage::<State>::new()])
+            .dependencies(dptree::deps![InMemStorage::<State>::new()])
             .build()
+            // .dispatch()
             .dispatch_with_listener(
                 listener,
                 LoggingErrorHandler::with_custom_text("An error from the update listener"),
