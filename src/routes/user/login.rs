@@ -142,8 +142,8 @@ pub async fn login(
                             (PHONE_NUMBER, phone_number),
                             (CODE, generate::six_digit_number())
                         ]).await.unwrap();
-                    let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
-                    let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
+                    let _: () = redis_conn.expire(&user_id, 300).await.unwrap();
+                    let _: () = redis_conn.expire(&verification_id, 360).await.unwrap();
                     verification_id
                 }
             };
