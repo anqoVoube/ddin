@@ -98,32 +98,20 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
 pub async fn handle_callback_query(
     bot: Bot,
     dialogue: MyDialogue,
-    // full_name: String, // Available from `State::ReceiveProductChoice`.
     query: CallbackQuery,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-    println!("{:?}", query);
-    // Check if the callback query has data
-    if let Some(data) = query.data {
-        println!("{}", data);
-        match data.as_str() {
-            // Handle different callback data
-            "some_callback_data" => {
-                // Perform actions based on the callback data
-                // For example, send a message or update dialogue state
-                bot.send_message(query.message.unwrap().chat.id, "You selected an option!").await?;
-            },
-            // Handle other callback data cases
-            _ => {
-                // Handle unknown or unexpected callback data
-                bot.send_message(query.message.unwrap().chat.id, "Unknown option selected.").await?;
-            }
+    let chat_id = query.message.unwrap().chat.id; 
+    if let Some(data) = query.data.as_str() {
+        let (clear_data, business_id) = data.split("_").collect::<Vec<&str>>();
+        if data.startswith("hide") {
+            Business::find_by_id(
+            bot.send_message(chat_id, "Close statistics").await?;
+        } else if data.startswith("open"){
+            bot.send_message(chat_id, "Open Statistics")
         }
     } else {
-        // No callback data present, send an error message or handle accordingly
-        bot.send_message(query.message.unwrap().chat.id, "No data received from button.").await?;
+        bot.send_message(query.message.unwrap().chat.id, "Something went wrong").await?;
     }
-
-    // Optionally, you can also answer the callback query to stop the loading animation on the button
     bot.answer_callback_query(&query.id).send().await?;
 
     Ok(())
