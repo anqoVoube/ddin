@@ -111,7 +111,6 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .route("/check-title", get(check_title_uniqueness))
         .nest("/find", find_router())
         .nest("/debts", debts_router())
-        // .nest("/business", business_router())
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
         .nest("/no-code-product", no_code_product_router())
