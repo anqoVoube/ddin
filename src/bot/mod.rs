@@ -1,12 +1,12 @@
 use std::error::Error;
-use sea_orm::{Condition, EntityTrait};
+use sea_orm::{ActiveModelTrait, Condition, EntityTrait, Set};
 use teloxide::Bot;
 use teloxide::dispatching::dialogue::InMemStorage;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{CallbackQuery, Dialogue, Message, Request, Requester, ResponseResult};
 use teloxide::types::{ButtonRequest, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
 use crate::database::prelude::{Business, User};
-use crate::database::{business, user};
+use crate::database::{business, user, weight_item};
 use crate::{POSTGRES_CONNECTION, State};
 use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
@@ -100,17 +100,53 @@ pub async fn handle_callback_query(
     dialogue: MyDialogue,
     query: CallbackQuery,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let chat_id = query.message.unwrap().chat.id; 
-    if let Some(data) = query.data.as_str() {
-        let (clear_data, business_id) = data.split("_").collect::<Vec<&str>>();
-        if data.startswith("hide") {
-            Business::find_by_id(
-            bot.send_message(chat_id, "Close statistics").await?;
-        } else if data.startswith("open"){
-            bot.send_message(chat_id, "Open Statistics")
+    let chat_id = query.message.clone().unwrap().chat.clone().id.clone();
+    if let data = query.data.unwrap().as_str() {
+        let gotten_data = data.split("_").collect::<Vec<&str>>();
+        let clear_data = gotten_data.get(0).unwrap();
+        let business_id = gotten_data.get(1).unwrap().parse::<i32>().unwrap();
+        let database = POSTGRES_CONNECTION.get().unwrap();
+        // TODO: refactor
+
+        if data.starts_with("hide") {
+            match Business::find_by_id(business_id).one(database).await{
+                Ok(Some(business)) => {
+                    let mut business: business::ActiveModel = business.into();
+                    business.has_full_access = Set(false);
+                    if let Err(err) = business.update(database).await {
+                        println!("{:?}", err);
+                    }
+                },
+                Ok(None) => todo!(),
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
+            let markup = InlineKeyboardMarkup::new([
+                [InlineKeyboardButton::callback("Открыть статистику", format!("open_{}", business_id))]
+            ]);
+            bot.send_message(chat_id, "Статус Статистики: Закрытый 📕").reply_markup(markup).await?;
+        } else if data.starts_with("open"){
+            match Business::find_by_id(business_id).one(database).await{
+                Ok(Some(business)) => {
+                    let mut business: business::ActiveModel = business.into();
+                    business.has_full_access = Set(true);
+                    if let Err(err) = business.update(database).await {
+                        println!("{:?}", err);
+                    }
+                },
+                Ok(None) => todo!(),
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
+            let markup = InlineKeyboardMarkup::new([
+                [InlineKeyboardButton::callback("Закрыть статистику", format!("hide_{}", business_id))]
+            ]);
+            bot.send_message(chat_id, "Статус Статистики: Открытый 📖").reply_markup(markup).await?;
         }
     } else {
-        bot.send_message(query.message.unwrap().chat.id, "Something went wrong").await?;
+        bot.send_message(query.message.clone().unwrap().chat.id, "Something went wrong").await?;
     }
     bot.answer_callback_query(&query.id).send().await?;
 

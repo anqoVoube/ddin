@@ -186,11 +186,11 @@ pub async fn init_bot() -> Router{
         )
             .dependencies(dptree::deps![InMemStorage::<State>::new()])
             .build()
-            // .dispatch()
-            .dispatch_with_listener(
-                listener,
-                LoggingErrorHandler::with_custom_text("An error from the update listener"),
-            )
+            .dispatch()
+            // .dispatch_with_listener(
+            //     listener,
+            //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
+            // )
             .await;
         }
     );

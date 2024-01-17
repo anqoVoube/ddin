@@ -2,7 +2,7 @@ pub mod media;
 pub mod condition;
 pub mod get_parent;
 pub mod space_upload;
-pub mod title_processor;
+pub mod string_processor;
 pub mod hash_helper;
 pub mod item_type;
 mod db_api;

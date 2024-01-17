@@ -7,9 +7,10 @@ use chrono::{NaiveDate, NaiveDateTime, Local, Utc, Datelike, TimeZone};
 use http::StatusCode;
 use multipart::server::nickel::nickel::MediaType::C;
 use scylla::{IntoTypedRows, Session as ScyllaDBSession};
-use sea_orm::DatabaseConnection;
+use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use crate::core::auth::middleware::{Auth, CustomHeader};
+use crate::database::prelude::Business;
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
@@ -61,7 +62,10 @@ pub async fn full(
     Extension(CustomHeader {business_id}): Extension<CustomHeader>,
     Query(Search {r#type, prev}): Query<Search>
 ) -> Response{
-
+    let mut has_access = true;
+    if let Ok(Some(business)) = Business::find_by_id(business_id).one(&database).await{
+        has_access = business.has_full_access;
+    }
     println!("type {:?}", r#type);
     println!("prev {:?}", prev);
 
@@ -161,31 +165,53 @@ pub async fn full(
         }
     };
     let mut prices: Vec<i32> = (0..namings.len()).map(|_| 0).collect();
-    for (date, total_profit) in profit_by_date {
-        println!("DATE!!! {}", date);
-        match r#type{
-            Types::Year => {
-                prices[date.month0() as usize] += total_profit
-            },
-            _ => {
-                prices[date.signed_duration_since(start_date).num_days() as usize] += total_profit
+    if has_access {
+        for (date, total_profit) in profit_by_date {
+            println!("DATE!!! {}", date);
+            match r#type {
+                Types::Year => {
+                    prices[date.month0() as usize] += total_profit
+                },
+                _ => {
+                    prices[date.signed_duration_since(start_date).num_days() as usize] += total_profit
+                }
             }
         }
     }
 
     println!("{:?}", best_quantity);
     println!("{:?}", best_profit);
-
-    (
-        StatusCode::OK,
-        Json(
-            StatisticsResponse{
-                best_quantity,
-                best_profit,
-                prices,
-                namings
-            }
-        )
-    ).into_response()
-
+    if has_access {
+        (
+            StatusCode::OK,
+            Json(
+                StatisticsResponse {
+                    best_quantity,
+                    best_profit,
+                    prices,
+                    namings
+                }
+            )
+        ).into_response()
+    } else {
+        (
+            StatusCode::OK,
+            Json(
+                StatisticsResponse {
+                    best_quantity: BestQuantity{
+                    title: "No items yet".to_string(),
+                    main_image: Some("default.png".to_string()),
+                    overall_quantity: 0
+                },
+                    best_profit: BestProfit{
+                    title: "No items yet".to_string(),
+                    main_image: Some("default.png".to_string()),
+                    overall_profit: 0
+                },
+                    prices,
+                    namings
+                }
+            )
+        ).into_response()
+    }
 }
