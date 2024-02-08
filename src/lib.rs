@@ -50,8 +50,10 @@ pub enum State {
 
 
 pub async fn init_db() -> DatabaseConnection{
+    let frick = dotenv!("DATABASE_URI");
+    println!("{}", frick);
     let mut opt = ConnectOptions::new(
-        dotenv!("DATABASE_URI")
+        frick
     );
     opt.max_connections(100)
         .min_connections(5);
@@ -186,11 +188,11 @@ pub async fn init_bot() -> Router{
         )
             .dependencies(dptree::deps![InMemStorage::<State>::new()])
             .build()
-            .dispatch()
-            // .dispatch_with_listener(
-            //     listener,
-            //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
-            // )
+            // .dispatch()
+            .dispatch_with_listener(
+                listener,
+                LoggingErrorHandler::with_custom_text("An error from the update listener"),
+            )
             .await;
         }
     );
