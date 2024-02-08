@@ -15,6 +15,11 @@ fn default_as_false() -> bool {
     false
 }
 
+fn default_as_true() -> bool {
+    false
+}
+
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Body {
     title: String,
@@ -23,6 +28,8 @@ pub struct Body {
     works_until: NaiveTime,
     #[serde(default="default_as_false")]
     is_closed: bool,
+    #[serde(default="default_as_true")]
+    has_full_access: bool,
 }
 
 
@@ -35,11 +42,11 @@ pub struct ResponseBody{
 pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
-    Json(Body {title, location, works_from, works_until, is_closed}): Json<Body>
+    Json(Body {title, location, works_from, works_until, is_closed, has_full_access}): Json<Body>
 ) -> Response{
     let owner_id = auth.user_id;
     match create_model!(
-        ActiveModel, &database, title, location, works_from, works_until, is_closed, owner_id) {
+        ActiveModel, &database, title, location, works_from, works_until, is_closed, owner_id, has_full_access) {
         Ok(instance) => {
             let business_id = instance.id.clone().unwrap();
             info!("{:?}", instance);
