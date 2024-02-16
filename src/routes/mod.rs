@@ -75,6 +75,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
     let origins = [
         "https://ddin.uz".parse().unwrap(),
         "https://api.ddin.uz".parse().unwrap(),
+        "https://market-place.ddin.uz".parse().unwrap(),
         "81.95.230.194".parse().unwrap(),
         "http://81.95.230.194".parse().unwrap(),
         "84.54.122.78".parse().unwrap(),

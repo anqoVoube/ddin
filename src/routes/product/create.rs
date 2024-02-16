@@ -56,7 +56,7 @@ pub async fn create(
                             Ok(default_created())
                         },
                         Err(error) => {
-                            error!("Couldn't update product with id. Original error is: {}", error);
+                            println!("Couldn't update product with id. Original error is: {}", error);
                             Err(internal_server_error())
                         }
                     }
@@ -69,6 +69,8 @@ pub async fn create(
                         business_id: Set(business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),
                         parent_id: Set(parent_id),
+                        is_accessible: Set(true),
+                        discount: Set(0),
                         ..Default::default()
                     };
 
@@ -78,7 +80,7 @@ pub async fn create(
                             Ok(default_created())
                         },
                         Err(error) => {
-                            error!("Unable to create {:?}. Original error was {}", 1, error);
+                            println!("Unable to create {:?}. Original error was {}", 1, error);
                             Err(internal_server_error())
                         }
                     }
@@ -86,7 +88,7 @@ pub async fn create(
             }
         },
         Err(error) => {
-            error!("Couldn't fetch parent_product with id: {}. Original error is: {}", parent_id, error);
+            println!("Couldn't fetch parent_product with id: {}. Original error is: {}", parent_id, error);
             Err(internal_server_error())
         }
     }
