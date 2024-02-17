@@ -53,8 +53,7 @@ use crate::routes::debts::router::get_router as debts_router;
 use crate::routes::utils::media::media_path;
 use crate::routes::weight_item::create::create as create_weight_item;
 use crate::routes::sell::sell;
-use tower_http::services::ServeDir;
-use http::StatusCode;
+
 #[derive(Clone)]
 pub struct AppConnections {
     pub redis: RedisPool,
