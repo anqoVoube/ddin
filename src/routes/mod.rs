@@ -26,7 +26,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 
 
-use axum::routing::{get, post};
+use axum::routing::{get, get_service, post};
 use axum::http::{Method, header};
 use http::HeaderName;
 use mongodb::Database;
@@ -53,7 +53,8 @@ use crate::routes::debts::router::get_router as debts_router;
 use crate::routes::utils::media::media_path;
 use crate::routes::weight_item::create::create as create_weight_item;
 use crate::routes::sell::sell;
-
+use tower_http::services::ServeDir;
+use http::StatusCode;
 #[derive(Clone)]
 pub struct AppConnections {
     pub redis: RedisPool,
@@ -151,6 +152,14 @@ pub fn create_routes(
 
     Router::new()
         .nest("/", v1_routes(connections.clone()))
+        .nest(
+        "/static",
+        get_service(ServeDir::new("/root/ddin/media/images/")).handle_error(|error| async move {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Unhandled internal error: {}", error),
+            )
+        })
         .route("/media/*path", get(media_path))
         .layer(Extension(redis))
         .layer(Extension(database))
