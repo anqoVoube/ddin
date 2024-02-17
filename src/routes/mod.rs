@@ -123,7 +123,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 
         .route_layer(middleware::from_fn_with_state(connections, auth_getter))
 
-        .layer(DefaultBodyLimit::max(1024 * 1024 * 2000))
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 10))
         .nest("/user/", user_router())
         // .route("/webhook", post(bot_webhook))
         .layer(cors)

@@ -49,6 +49,11 @@ pub async fn upload(
         } else if name.ends_with("main_image") {
             let file_data: Vec<u8> = field.bytes().await.unwrap().to_vec();
             let file_name = format!("{}.jpg", generate_uuid4());
+            request_body.main_image = Some(file_name.clone());
+            let filepath = Path::new("media/images").join(file_name);
+            let mut file = File::create(filepath).unwrap();
+            file.write_all(&file_data).unwrap();
+
 
         } else {
             let bytes = field.bytes().await.unwrap();
