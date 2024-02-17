@@ -26,7 +26,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 
 
-use axum::routing::{get, get_service, post};
+use axum::routing::{get, post};
 use axum::http::{Method, header};
 use http::HeaderName;
 use mongodb::Database;
@@ -152,14 +152,6 @@ pub fn create_routes(
 
     Router::new()
         .nest("/", v1_routes(connections.clone()))
-        .nest(
-        "/static",
-        get_service(ServeDir::new("/root/ddin/media/images/")).handle_error(|error| async move {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Unhandled internal error: {}", error),
-            )
-        })
         .route("/media/*path", get(media_path))
         .layer(Extension(redis))
         .layer(Extension(database))
