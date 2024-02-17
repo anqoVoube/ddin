@@ -86,6 +86,7 @@ pub async fn upload(
         images: Set(request_body.images.clone()),
         expiration_in_days: Set(request_body.expiration_in_days.unwrap_or(DEFAULT_EXPIRATION_IN_DAYS)),
         business_id: Set(Some(business_id)),
+
         ..Default::default()
     };
 
