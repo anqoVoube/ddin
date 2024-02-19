@@ -151,7 +151,7 @@ pub fn create_routes(
 
     Router::new()
         .nest("/", v1_routes(connections.clone()))
-        .route("/media/*path", get(media_path))
+        // .route("/media/*path", get(media_path))
         .layer(Extension(redis))
         .layer(Extension(database))
         .layer(Extension(scylla_connection))

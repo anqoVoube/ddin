@@ -8,6 +8,5 @@ use teloxide::prelude::*;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    println!("RecompileS!!!");
     run().await;
 }
