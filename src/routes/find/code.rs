@@ -72,16 +72,16 @@ pub async fn google_search_title_by_code(
             )
         ).into_response();
     }
-    if let Some(value) = uz_catalog_site_inner(code.clone()).await{
-        return (
-            StatusCode::OK,
-            Json(
-                ResponseBody {
-                    result: vec!(value)
-                }
-            )
-        ).into_response();
-    }
+    // if let Some(value) = uz_catalog_site_inner(code.clone()).await{
+    //     return (
+    //         StatusCode::OK,
+    //         Json(
+    //             ResponseBody {
+    //                 result: vec!(value)
+    //             }
+    //         )
+    //     ).into_response();
+    // }
 
     let url = "https://google.serper.dev/search";
     let payload = json!({
@@ -167,13 +167,13 @@ struct SuggestionData {
     type_field: String,
 }
 
-pub async fn uz_catalog_site_inner(code: String) -> Option<String>{
-    let url = format!("https://catalog.milliykatalogi.uz/search/getSearchResult?type=goods&query={}", code);
-    let response = reqwest::get(url).await.unwrap().text().await.unwrap();
-    let parsed: UzCatalogResponse = serde_json::from_str(&response).unwrap();
-    if parsed.suggestions.len() > 0{
-        Some(parsed.suggestions[0].value.clone())
-    } else {
-        None
-    }
-}
+// pub async fn uz_catalog_site_inner(code: String) -> Option<String>{
+//     let url = format!("https://catalog.milliykatalogi.uz/search/getSearchResult?type=goods&query={}", code);
+//     let response = reqwest::get(url).await.unwrap().text().await.unwrap();
+//     let parsed: UzCatalogResponse = serde_json::from_str(&response).unwrap();
+//     if parsed.suggestions.len() > 0{
+//         Some(parsed.suggestions[0].value.clone())
+//     } else {
+//         None
+//     }
+// }
