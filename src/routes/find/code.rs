@@ -62,73 +62,72 @@ pub async fn google_search_title_by_code(
             ).into_response();
         }
     };
+    if brah.len() > 0 {
+        return (
+            StatusCode::OK,
+            Json(
+                ResponseBody {
+                    result: brah
+                }
+            )
+        ).into_response();
+    }
+    if let Some(value) = uz_catalog_site_inner(code.clone()).await{
+        return (
+            StatusCode::OK,
+            Json(
+                ResponseBody {
+                    result: vec!(value)
+                }
+            )
+        ).into_response();
+    }
+
+    let url = "https://google.serper.dev/search";
+    let payload = json!({
+        "q": code.clone()
+    });
+    let client = reqwest::Client::new();
+    let res = client.post(url)
+        .header("X-API-KEY", "3b89e716e6543f4972299525884d29aad40f8da9")
+        .header("Content-Type", "application/json")
+        .json(&payload)
+        .send()
+        .await.expect("Failed to send request");
+
+
+    let response_text = res.text().await.expect("Failed to get response text");
+    let v: Value = serde_json::from_str(&response_text).unwrap();
+    // Extract titles from the JSON
+    let mut titles = v["organic"]
+        .as_array()
+        .ok_or("Expected 'organic' to be an array").expect("Failed to get organic array")
+        .iter()
+        .filter_map(|entry| entry["title"].as_str())
+        .map(String::from)
+        .collect::<Vec<String>>();
+
+    let mut final_result = vec!();
+    for i in 0..min(2, titles.len()) {
+        final_result.push(titles[i].clone());
+    }
+    final_result.append(&mut barcode_site_inner(code.clone()).await);
+    if titles.len() > 2 {
+        final_result.extend_from_slice(&titles[2..]);
+    }
+    let transformed_vec: Vec<String> = final_result
+        .into_iter()
+        .filter(|s| !s.contains("Barcode-list.ru"))
+        .map(|s| s.replace((&format!("({})", code)), "").replace((&format!("{}", code)), ""))
+        .collect();
     return (
         StatusCode::OK,
         Json(
             ResponseBody {
-                result: brah
+                result: transformed_vec
             }
         )
     ).into_response();
-    // if brah.len() > 0 {
-    //
-    // }
-    // if let Some(value) = uz_catalog_site_inner(code.clone()).await{
-    //     return (
-    //         StatusCode::OK,
-    //         Json(
-    //             ResponseBody {
-    //                 result: vec!(value)
-    //             }
-    //         )
-    //     ).into_response();
-    // }
-    //
-    // let url = "https://google.serper.dev/search";
-    // let payload = json!({
-    //     "q": code.clone()
-    // });
-    // let client = reqwest::Client::new();
-    // let res = client.post(url)
-    //     .header("X-API-KEY", "3b89e716e6543f4972299525884d29aad40f8da9")
-    //     .header("Content-Type", "application/json")
-    //     .json(&payload)
-    //     .send()
-    //     .await.expect("Failed to send request");
-    //
-    //
-    // let response_text = res.text().await.expect("Failed to get response text");
-    // let v: Value = serde_json::from_str(&response_text).unwrap();
-    // // Extract titles from the JSON
-    // let mut titles = v["organic"]
-    //     .as_array()
-    //     .ok_or("Expected 'organic' to be an array").expect("Failed to get organic array")
-    //     .iter()
-    //     .filter_map(|entry| entry["title"].as_str())
-    //     .map(String::from)
-    //     .collect::<Vec<String>>();
-    //
-    // let mut final_result = vec!();
-    // for i in 0..min(2, titles.len()) {
-    //     final_result.push(titles[i].clone());
-    // }
-    // final_result.append(&mut barcode_site_inner(code.clone()).await);
-    // if titles.len() > 2 {
-    //     final_result.extend_from_slice(&titles[2..]);
-    // }
-    // let transformed_vec: Vec<String> = final_result
-    //     .into_iter()
-    //     .filter(|s| !s.contains("Barcode-list.ru"))
-    //     .map(|s| s.replace((&format!("({})", code)), "").replace((&format!("{}", code)), ""))
-    //     .collect();
-    // return (
-    //     StatusCode::OK,
-    //     Json(
-    //         ResponseBody {
-    //             result: transformed_vec
-    //         }
-    //     )
-    // ).into_response();
 }
 
 pub async fn barcode_site_inner(code: String) -> Vec<String>{
