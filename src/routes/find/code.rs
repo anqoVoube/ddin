@@ -25,7 +25,7 @@ pub async fn google_search_title_by_code(
     Extension(SqliteDBConnection { sqlite }): Extension<SqliteDBConnection>,
     Path(code): Path<String>
 ) -> Response {
-    let brah: Vec<String> = match sqlite.lock().await.prepare("SELECT name FROM barcodes WHERE barcode=:code;") {
+    let brah: Vec<String> = match sqlite.lock().await.prepare("SELECT name FROM Barcodes WHERE barcode=:code;") {
         Ok(mut value) => match value.query_map(&[(":code", &code.clone())], |row| {
             Ok(Data {
                 name: row.get(0).unwrap_or("ou".to_owned()),
