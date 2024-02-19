@@ -39,6 +39,7 @@ pub async fn google_search_title_by_code(
                 title_names
             },
             Err(err) => {
+                println!("{}", err);
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(
@@ -50,6 +51,7 @@ pub async fn google_search_title_by_code(
             }
         },
         Err(err) => {
+            println!("{}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
