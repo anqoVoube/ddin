@@ -138,6 +138,7 @@ pub async fn init_mongo() -> mongodb::Database{
 }
 
 pub async fn init_barcode_sqlite() -> rusqlite::Connection{
+    println!("Connection established");
     rusqlite::Connection::open(
         dotenv!("SQLITE_DB_NAME")
     ).expect("Failed to open database")
