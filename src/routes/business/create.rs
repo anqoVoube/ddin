@@ -16,7 +16,7 @@ fn default_as_false() -> bool {
 }
 
 fn default_as_true() -> bool {
-    false
+    true
 }
 
 

@@ -1,4 +1,4 @@
-use sea_orm::QueryFilter;
+use sea_orm::{Condition, QueryFilter};
 use axum::{ debug_handler, Extension};
 
 use axum_extra::extract::Multipart;
@@ -8,7 +8,7 @@ use axum::response::Response;
 use log::error;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
-use crate::database::parent_no_code_product;
+use crate::database::{parent_no_code_product, parent_weight_item};
 use crate::database::prelude::ParentNoCodeProduct;
 use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, bad_request};
 use sea_orm::ColumnTrait;
@@ -60,7 +60,18 @@ pub async fn upload(
             // checking for title existence
             if name.ends_with("title"){
                 match ParentNoCodeProduct::find()
-                    .filter(parent_no_code_product::Column::Title.eq(text_data.clone()))
+                    .filter(
+                        Condition::all()
+                            .add(
+                                Condition::all()
+                                    .add(parent_no_code_product::Column::Title.eq(text_data.clone()))
+                            )
+                            .add(
+                                Condition::any()
+                                    .add(parent_no_code_product::Column::BusinessId.eq(business_id))
+                                    .add(parent_no_code_product::Column::BusinessId.is_null())
+                            )
+                    )
                     .one(&database).await{
                     Ok(Some(_)) => {
                         return bad_request("Title already exists");

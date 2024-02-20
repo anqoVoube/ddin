@@ -5,14 +5,15 @@ use axum_extra::extract::Multipart;
 use std::{str, fs::File, io::Write, path::Path, fs};
 use axum::response::Response;
 use log::error;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait};
 use sea_orm::ActiveValue::Set;
-use crate::database::parent_weight_item;
+use crate::database::{parent_no_code_product, parent_weight_item};
 use crate::database::prelude::ParentWeightItem;
 use crate::routes::utils::{default_created, internal_server_error, hash_helper::generate_uuid4, bad_request};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use crate::core::auth::middleware::{Auth, CustomHeader};
+use crate::routes::utils::condition::contains;
 
 const DEFAULT_EXPIRATION_IN_DAYS: i32 = 365;
 
@@ -59,7 +60,18 @@ pub async fn upload(
             // checking for title existence
             if name.ends_with("title"){
                 match ParentWeightItem::find()
-                    .filter(parent_weight_item::Column::Title.eq(text_data.clone()))
+                    .filter(
+                        Condition::all()
+                            .add(
+                                Condition::all()
+                                    .add(parent_weight_item::Column::Title.eq(text_data.clone()))
+                            )
+                            .add(
+                                Condition::any()
+                                    .add(parent_weight_item::Column::BusinessId.eq(business_id))
+                                    .add(parent_weight_item::Column::BusinessId.is_null())
+                            )
+                    )
                     .one(&database).await{
                     Ok(Some(_)) => {
                         return bad_request("Title already exists");
