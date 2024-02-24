@@ -33,6 +33,9 @@ impl From<business::Model> for BusinessSchema {
 }
 
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    // msg.chat.id
+
+
     let keyboard = KeyboardMarkup::new([
         [KeyboardButton::new("Поделиться контактом").request(ButtonRequest::Contact)],
     ]).resize_keyboard(true);
@@ -51,36 +54,8 @@ pub async fn receive_full_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
             condition = condition.add(user::Column::PhoneNumber.eq(format!("{}", phone_number)));
             match User::find().filter(condition).one(POSTGRES_CONNECTION.get().unwrap()).await{
                 Ok(Some(user)) => {
-                    let mut condition = Condition::all();
-                    condition = condition.add(business::Column::OwnerId.eq(user.id));
-                    let businesses = Business::find()
-                        .filter(condition)
-                        .all(POSTGRES_CONNECTION.get().unwrap())
-                        .await?;
-                    if businesses.len() == 1{
-                        let working_business = businesses.first().unwrap();
-                        if working_business.has_full_access{
-                            let markup = InlineKeyboardMarkup::new([
-                                [InlineKeyboardButton::callback("Закрыть статистику", format!("hide_{}", working_business.id))]
-                            ]);
-                            bot.send_message(msg.chat.id, "Статус Статистики: Открытый 📖").reply_markup(markup).await?;
-                        } else {
-                            let markup = InlineKeyboardMarkup::new([
-                                [InlineKeyboardButton::callback("Открыть статистику", format!("open_{}", working_business.id))]
-                            ]);
-                            bot.send_message(msg.chat.id, "Статус Статистики: Закрытый 📕").reply_markup(markup).await?;
-                        }
-                    } else {
-                        let buttons: Vec<[InlineKeyboardButton; 1]> = businesses
-                            .into_iter()
-                            .map(|x| [InlineKeyboardButton::callback(&x.title, format!("business_{}", &x.id))])
-                            .collect();
-
-                        let markup = InlineKeyboardMarkup::new(buttons);
-                        bot.send_message(msg.chat.id, "Home").reply_markup(markup).await?;
-                    }
-
-                },
+                    todo!();
+                }
                 Ok(None) => println!("Not found"),
                 Err(e) => println!("Error, {:?}", e)
             }
