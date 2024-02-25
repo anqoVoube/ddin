@@ -167,10 +167,11 @@ pub async fn receive_contacts(
     let chat_id = msg.chat.id.0;
     match &msg.contact(){
         Some(Contact {phone_number, ..}) => {
+            let phone_number = if phone_number.starts_with("+") {phone_number.to_string()} else {format!("+{}", phone_number)};
             let user = user::ActiveModel{
                 first_name: Set(first_name),
                 last_name: Set(last_name),
-                phone_number: Set(phone_number.to_string()),
+                phone_number: Set(phone_number),
                 is_verified: Set(true),
                 ..Default::default()
             };
