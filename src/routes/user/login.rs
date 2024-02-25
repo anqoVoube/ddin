@@ -148,8 +148,8 @@ pub async fn login(
                             (PHONE_NUMBER, phone_number),
                             (CODE, verification_code.clone())
                         ]).await.unwrap();
-                    let _: () = redis_conn.expire(user_id, 300).await.unwrap();
-                    let _: () = redis_conn.expire(&verification_id, 360).await.unwrap();
+                    let _: () = redis_conn.expire(user_id, 120).await.unwrap();
+                    let _: () = redis_conn.expire(&verification_id, 130).await.unwrap();
                     let mut condition = Condition::all();
                     condition = condition.add(telegram_user::Column::UserId.eq(user.id));
                     match TelegramUser::find().filter(condition).one(&database).await {
