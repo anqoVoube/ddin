@@ -1,3 +1,4 @@
+use teloxide::types::ChatId;
 use axum::{debug_handler, Extension, Json};
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
@@ -5,12 +6,14 @@ use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use sea_orm::{Condition, DatabaseConnection, EntityTrait, QueryFilter, ActiveModelTrait};
 
-use crate::database::user;
+use crate::database::{telegram_user, user};
 use crate::routes::utils::{bad_request, created, default_created, internal_server_error};
 
 use sea_orm::ColumnTrait;
+use teloxide::Bot;
+use teloxide::requests::Requester;
 use tower_cookies::Cookies;
-use crate::database::prelude::User;
+use crate::database::prelude::{User, TelegramUser};
 use crate::RedisPool;
 use crate::routes::user::{AuthType, CODE, PHONE_NUMBER, TYPE, VerificationData};
 use crate::routes::utils::{check::is_valid_phone_number, generate};
@@ -118,8 +121,10 @@ pub struct Body {
 pub async fn login(
     Extension(database): Extension<DatabaseConnection>,
     Extension(redis): Extension<RedisPool>,
+    Extension(bot): Extension<Bot>,
     Json(Body{ phone_number}): Json<Body>,
 ) -> Response {
+    println!("Еперный бабай!");
     if !is_valid_phone_number(&phone_number) {
         return bad_request("Invalid phone number");
     }
@@ -130,6 +135,7 @@ pub async fn login(
             let user_id = user.id.to_string();
             let mut redis_conn = redis.get().await.expect("Failed to get Redis connection.");
             let possible_verification_id: RedisResult<String> = redis_conn.get(&user_id).await;
+            let verification_code = generate::six_digit_number();
             let verification_id = match possible_verification_id {
                 Ok(verification_id) => verification_id.to_string(),
                 Err(_) => {
@@ -140,10 +146,20 @@ pub async fn login(
                         &*vec![
                             (TYPE, AuthType::Login.to_string()),
                             (PHONE_NUMBER, phone_number),
-                            (CODE, generate::six_digit_number())
+                            (CODE, verification_code.clone())
                         ]).await.unwrap();
                     let _: () = redis_conn.expire(user_id, 300).await.unwrap();
                     let _: () = redis_conn.expire(&verification_id, 360).await.unwrap();
+                    let mut condition = Condition::all();
+                    condition = condition.add(telegram_user::Column::UserId.eq(user.id));
+                    match TelegramUser::find().filter(condition).one(&database).await {
+                        Ok(Some(tg_user)) => {
+                            println!("Trying to send message");
+                            bot.send_message(ChatId(tg_user.telegram_id), verification_code).await.unwrap();
+                        },
+                        Ok(None) => {println!("{}", "NOT ENOUGH!")}
+                        Err(e) => {println!("{}", e)},
+                    };
                     verification_id
                 }
             };

@@ -33,6 +33,7 @@ use mongodb::Database;
 
 use scylla::Session;
 use sea_orm::DatabaseConnection;
+use teloxide::Bot;
 use teloxide::update_listeners::webhooks;
 use teloxide::update_listeners::webhooks::Options;
 use tokio::sync::Mutex;
@@ -137,7 +138,7 @@ pub fn create_routes(
     scylla: Session,
     mongo: Database,
     sqlite: rusqlite::Connection,
-    router: Router
+    bot: Bot
 ) -> Router<(), Body> {
 
     let connections = AppConnections{redis: redis.clone(), database: database.clone()};
@@ -157,6 +158,7 @@ pub fn create_routes(
         .layer(Extension(scylla_connection))
         .layer(Extension(mongo))
         .layer(Extension(sqlite_connection))
+        .layer(Extension(bot))
         .layer(CookieManagerLayer::new())
-        .nest("/", router)
+        // .nest("/ffffffffffffffffff", router)
 }

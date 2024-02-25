@@ -13,6 +13,7 @@ pub struct Model {
     pub full_name: Option<String>,
     #[sea_orm(unique)]
     pub user_id: i32,
+    pub lang: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -44,14 +44,24 @@ pub enum State {
     //     full_name: String,
     //     age: u8,
     // },
-    ReceiveContact,
-    ChooseBusiness,
+    CallbackHandler,
+    ReceiveFirstName {
+        lang: String
+    },
+    ReceiveLastName {
+        lang: String,
+        first_name: String,
+    },
+    ReceiveContact {
+        lang: String,
+        first_name: String,
+        last_name: String,
+    },
 }
 
 
 pub async fn init_db() -> DatabaseConnection{
     let frick = dotenv!("DATABASE_URI");
-    println!("{}", frick);
     let mut opt = ConnectOptions::new(
         frick
     );
@@ -145,36 +155,37 @@ pub async fn init_barcode_sqlite() -> rusqlite::Connection{
 }
 
 
-pub async fn init_bot() -> Router{
+pub async fn init_bot() -> Bot{
     let bot = Bot::new(dotenv!("BOT_TOKEN"));
-    let options = Options {
-        address: ([0, 0, 0, 0], 3000).into(),
-        url: "https://ddin.uz/webhook".parse().unwrap(),
-        certificate: None,
-        max_connections: None,
-        drop_pending_updates: false,
-        secret_token: None,
-    };
-
-    let (
-        listener,
-        stop_flag,
-        router
-    ) = axum_no_setup(
-        options
-    );
+    // let options = Options {
+    //     address: ([0, 0, 0, 0], 3000).into(),
+    //     url: "https://ddin.uz/webhook".parse().unwrap(),
+    //     certificate: None,
+    //     max_connections: None,
+    //     drop_pending_updates: false,
+    //     secret_token: None,
+    // };
+    //
+    // let (
+    //     listener,
+    //     stop_flag,
+    //     router
+    // ) = axum_no_setup(
+    //     options
+    // );
 
     fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
         use dptree::case;
 
-
         let message_handler = Update::filter_message()
             .enter_dialogue::<Message, InMemStorage<State>, State>()
-            .branch(dptree::case![State::Start].endpoint(bot::start))
-            .branch(dptree::case![State::ReceiveContact].endpoint(bot::receive_full_name));
+            .branch(case![State::Start].endpoint(bot::start))
+            .branch(case![State::ReceiveFirstName {lang}].endpoint(bot::receive_first_name))
+            .branch(case![State::ReceiveLastName {lang, first_name}].endpoint(bot::receive_last_name))
+            .branch(case![State::ReceiveContact {lang, first_name, last_name}].endpoint(bot::receive_contacts));
 
         let callback_query_handler = Update::filter_callback_query()
-            .branch(case![State::ChooseBusiness])
+            .branch(case![State::CallbackHandler])
             .endpoint(bot::handle_callback_query);
 
         dialogue::enter::<Update, InMemStorage<State>, State, _>()
@@ -189,15 +200,15 @@ pub async fn init_bot() -> Router{
         )
             .dependencies(dptree::deps![InMemStorage::<State>::new()])
             .build()
-            // .dispatch()
-            .dispatch_with_listener(
-                listener,
-                LoggingErrorHandler::with_custom_text("An error from the update listener"),
-            )
+            .dispatch()
+            // .dispatch_with_listener(
+            //     listener,
+            //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
+            // )
             .await;
         }
     );
-    router
+    Bot::new(dotenv!("BOT_TOKEN"))
 }
 
 pub async fn run(){
