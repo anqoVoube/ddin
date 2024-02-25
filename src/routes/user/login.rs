@@ -135,7 +135,7 @@ pub async fn login(
             let user_id = user.id.to_string();
             let mut redis_conn = redis.get().await.expect("Failed to get Redis connection.");
             let possible_verification_id: RedisResult<String> = redis_conn.get(&user_id).await;
-            let verification_code = generate::six_digit_number();
+            let verification_code = generate::five_digit_number();
             let verification_id = match possible_verification_id {
                 Ok(verification_id) => verification_id.to_string(),
                 Err(_) => {
