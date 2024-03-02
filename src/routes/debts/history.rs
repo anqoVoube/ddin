@@ -134,7 +134,7 @@ pub async fn get_history(
 
         let mut detail_no_code_products: Vec<DetailedNoCodeProduct> = vec![];
         for product in products.no_code_products{
-            if let Ok(Parent::WeightItem(parent_product)) = get_parent_by_id(&database, product.parent_id, ItemType::NoCodeProduct).await{
+            if let Ok(Parent::NoCodeProduct(parent_product)) = get_parent_by_id(&database, product.parent_id, ItemType::NoCodeProduct).await{
                 detail_no_code_products.push(DetailedNoCodeProduct{
                     id: parent_product.id,
                     title: parent_product.title,
