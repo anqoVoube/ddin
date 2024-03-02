@@ -57,7 +57,7 @@ pub struct StatisticsResponse{
 #[derive(Debug, PartialEq, FromQueryResult)]
 struct PartialProductStats {
     pub parent_id: i32,
-    pub quantity_sum: i32,
+    pub quantity_sum: Option<i32>,
     pub item_type: i16,
 }
 
@@ -92,8 +92,6 @@ pub async fn full(
     println!("type {:?}", r#type);
     println!("prev {:?}", prev);
 
-    let current_date = Utc::now();
-
     let (start_date, end_date, namings) = get_date_range(&r#type, prev);
 
     // rust query below query
@@ -122,9 +120,9 @@ pub async fn full(
     println!("{:?}", products);
     println!("{}", products.len());
     for product in products{
-        if product.quantity_sum > max_quantity{
+        if product.quantity_sum.unwrap() > max_quantity{
             max_quantity_parent_id = product.parent_id;
-            max_quantity = product.quantity_sum;
+            max_quantity = product.quantity_sum.unwrap();
             max_quantity_item_type = product.item_type;
         }
     }
