@@ -74,7 +74,7 @@ struct PartialProfitProductStats {
 #[derive(Debug, PartialEq, FromQueryResult)]
 struct PartialProfitStats {
     pub date: NaiveDate,
-    pub total_profit: f64,
+    pub profit: f64,
 }
 
 
@@ -173,17 +173,16 @@ pub async fn full(
                 .and(product_statistics::Column::Date.gte(start_date))
                 .and(product_statistics::Column::Date.lte(end_date))
         )
-        .group_by(product_statistics::Column::Date)
         .select_only()
         .column(product_statistics::Column::Date)
-        .column_as(product_statistics::Column::Profit.sum(), "total_profit")
+        .column(product_statistics::Column::Profit)
         .into_model::<PartialProfitStats>()
         .all(&database)
         .await
         .unwrap();
 
     for profit in profits {
-        *profit_by_date.entry(profit.date).or_insert(0f64) += profit.total_profit;
+        *profit_by_date.entry(profit.date).or_insert(0f64) += profit.profit;
     }
 
     let best_quantity = match max_quantity_parent_id{
