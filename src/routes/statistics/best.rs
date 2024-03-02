@@ -57,7 +57,7 @@ pub struct StatisticsResponse{
 #[derive(Debug, PartialEq, FromQueryResult)]
 struct PartialProductStats {
     pub parent_id: i32,
-    pub quantity_sum: Option<i32>,
+    pub quantity_sum: i64,
     pub item_type: i16,
 }
 
@@ -65,7 +65,6 @@ struct PartialProductStats {
 #[derive(Debug, PartialEq, FromQueryResult)]
 struct PartialProfitProductStats {
     pub parent_id: i32,
-    pub date: NaiveDate,
     pub total_profit: f64,
     pub item_type: i16,
 }
@@ -103,12 +102,12 @@ pub async fn full(
                 .and(product_statistics::Column::Date.lte(end_date))
                 .and(product_statistics::Column::ItemType.eq(1).or(product_statistics::Column::ItemType.eq(3)))
         )
-        .group_by(product_statistics::Column::ParentId)
-        .group_by(product_statistics::Column::ItemType)
         .select_only()
         .column(product_statistics::Column::ParentId)
         .column(product_statistics::Column::ItemType)
         .column_as(product_statistics::Column::Quantity.sum(), "quantity_sum")
+        .group_by(product_statistics::Column::ParentId)
+        .group_by(product_statistics::Column::ItemType)
         .into_model::<PartialProductStats>()
         .all(&database)
         .await
@@ -120,9 +119,9 @@ pub async fn full(
     println!("{:?}", products);
     println!("{}", products.len());
     for product in products{
-        if product.quantity_sum.unwrap() > max_quantity{
+        if product.quantity_sum > max_quantity{
             max_quantity_parent_id = product.parent_id;
-            max_quantity = product.quantity_sum.unwrap();
+            max_quantity = product.quantity_sum;
             max_quantity_item_type = product.item_type;
         }
     }
