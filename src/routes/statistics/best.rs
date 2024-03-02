@@ -5,15 +5,11 @@ use axum::extract::Query;
 use axum::response::{Response, IntoResponse};
 use chrono::{NaiveDate, NaiveDateTime, Local, Utc, Datelike, TimeZone};
 use http::StatusCode;
-use multipart::server::nickel::nickel::MediaType::C;
-use scylla::{IntoTypedRows, Session as ScyllaDBSession};
 use sea_orm::{ColumnTrait, DatabaseConnection, DeriveColumn, DeriveModel, DerivePartialModel, EntityTrait, FromQueryResult, QuerySelect};
 use serde::{Deserialize, Serialize};
 use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{Business, ProfitStatistics};
 use crate::database::product_statistics;
-use crate::routes::parent_product::fetch::get_object_by_id;
-use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
 use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
 use crate::routes::statistics::{get_date_range, Search, Types};
@@ -84,7 +80,6 @@ struct PartialProfitStats {
 
 #[debug_handler]
 pub async fn full(
-    Extension(ScyllaDBConnection{scylla}): Extension<ScyllaDBConnection>,
     Extension(database): Extension<DatabaseConnection>,
     Extension(Auth {user_id}): Extension<Auth>,
     Extension(CustomHeader {business_id}): Extension<CustomHeader>,

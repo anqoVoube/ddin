@@ -61,10 +61,6 @@ pub struct AppConnections {
     pub database: DatabaseConnection,
 }
 
-#[derive(Clone)]
-pub struct ScyllaDBConnection {
-    pub scylla: Arc<Session>
-}
 
 #[derive(Clone)]
 pub struct SqliteDBConnection {
@@ -135,16 +131,12 @@ pub fn v1_routes(connections: AppConnections) -> Router{
 pub fn create_routes(
     database: DatabaseConnection,
     redis: RedisPool,
-    scylla: Session,
     mongo: Database,
     sqlite: rusqlite::Connection,
     bot: Bot
 ) -> Router<(), Body> {
 
     let connections = AppConnections{redis: redis.clone(), database: database.clone()};
-    let scylla_connection = ScyllaDBConnection{
-        scylla: Arc::new(scylla)
-    };
 
     let sqlite_connection = SqliteDBConnection{
         sqlite: Arc::new(Mutex::new(sqlite))
@@ -155,7 +147,6 @@ pub fn create_routes(
         // .route("/media/*path", get(media_path))
         .layer(Extension(redis))
         .layer(Extension(database))
-        .layer(Extension(scylla_connection))
         .layer(Extension(mongo))
         .layer(Extension(sqlite_connection))
         .layer(Extension(bot))

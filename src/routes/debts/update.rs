@@ -15,7 +15,6 @@ use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{NoCodeProduct, Rent, WeightItem};
 use crate::database::product::Entity as Product;
 use crate::database::{no_code_product, product, rent, rent_history, weight_item};
-use crate::routes::ScyllaDBConnection;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,7 +108,6 @@ impl EnumValue for ItemType{
 #[debug_handler]
 pub async fn update(
     Extension(database): Extension<DatabaseConnection>,
-    Extension(ScyllaDBConnection {scylla}): Extension<ScyllaDBConnection>,
     Extension(Auth{user_id}): Extension<Auth>,
     Json(PayBody{id, paid_price}): Json<PayBody>
 ) -> Response {

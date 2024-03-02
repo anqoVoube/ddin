@@ -216,13 +216,12 @@ pub async fn run(){
     // DB Connection For Telegram Bot
     POSTGRES_CONNECTION.set(database.clone()).unwrap();
     let redis = init_redis().await;
-    let scylla = init_scylla().await;
     let mongo = init_mongo().await;
     let sqlite = init_barcode_sqlite().await;
     let bot_axum_router = init_bot().await;
     log::info!("Starting dialogue bot..");
 
-    let app = create_routes(database, redis, scylla, mongo, sqlite, bot_axum_router);
+    let app = create_routes(database, redis, mongo, sqlite, bot_axum_router);
     let url = format!("0.0.0.0:{}", dotenv!("API_PORT"));
 
     axum::Server::bind(&url.parse().unwrap())

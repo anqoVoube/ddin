@@ -1,13 +1,10 @@
 use std::collections::BTreeMap;
 use std::error::Error;
-use std::sync::Arc;
 use axum::{debug_handler, Extension, Json};
 use axum::response::{IntoResponse, Response};
 use chrono::{Datelike, NaiveDate};
 use http::StatusCode;
-use scylla::{IntoTypedRows, Session};
 use serde::{Deserialize, Serialize};
-use crate::routes::ScyllaDBConnection;
 use crate::routes::statistics::{get_date_range, Types};
 use axum::extract::Query;
 use sea_orm::{DatabaseConnection, EntityTrait};

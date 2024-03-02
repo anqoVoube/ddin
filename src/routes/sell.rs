@@ -18,7 +18,6 @@ use crate::database::prelude::{NoCodeProduct, ProductStatistics, Rent, WeightIte
 use crate::database::product::Entity as Product;
 use crate::database::{no_code_product, product, product_statistics, profit_statistics, rent, rent_history, weight_item};
 use crate::database::prelude::ProfitStatistics;
-use crate::routes::ScyllaDBConnection;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
@@ -119,7 +118,6 @@ impl EnumValue for ItemType{
 #[debug_handler]
 pub async fn sell(
     Extension(database): Extension<DatabaseConnection>,
-    Extension(ScyllaDBConnection {scylla}): Extension<ScyllaDBConnection>,
     Extension(mongo): Extension<Database>,
     Extension(Auth{user_id}): Extension<Auth>,
     Extension(CustomHeader{business_id}): Extension<CustomHeader>,
