@@ -282,7 +282,7 @@ pub async fn sell(
                                     profit: Set(weight_item_instance.kg_weight * profit),
                                     business_id: Set(business_id),
                                     date: Set(current_date),
-                                    item_type: Set(ItemType::Product.get_value()),
+                                    item_type: Set(ItemType::WeightItem.get_value()),
                                     ..Default::default()
                                 };
 
@@ -383,9 +383,10 @@ pub async fn sell(
                                     profit: Set(no_code_product_instance.quantity as f64 * profit),
                                     business_id: Set(business_id),
                                     date: Set(current_date),
-                                    item_type: Set(ItemType::Product.get_value()),
+                                    item_type: Set(ItemType::NoCodeProduct.get_value()),
                                     ..Default::default()
                                 };
+
 
                                 product_stats_instance.save(&database).await.unwrap();
                             },
