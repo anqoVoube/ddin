@@ -21,6 +21,8 @@ pub mod parent_weight_item;
 pub mod private_workers_privateworker;
 pub mod private_workers_privateworker_categories;
 pub mod product;
+pub mod product_statistics;
+pub mod profit_statistics;
 pub mod rent;
 pub mod rent_history;
 pub mod services_location;

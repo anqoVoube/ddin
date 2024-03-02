@@ -3,18 +3,15 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "no_code_product")]
+#[sea_orm(table_name = "product_statistics")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i32,
+    pub id: i64,
+    pub item_type: i16,
     pub quantity: i32,
-    pub expiration_date: Option<Date>,
+    pub date: Date,
     pub business_id: i32,
     pub parent_id: i32,
-    pub is_accessible: bool,
-    pub discount: i32,
-    #[sea_orm(column_type = "Double")]
-    pub price: f64,
     #[sea_orm(column_type = "Double")]
     pub profit: f64,
 }
@@ -30,13 +27,13 @@ pub enum Relation {
     )]
     Business,
     #[sea_orm(
-        belongs_to = "super::parent_no_code_product::Entity",
+        belongs_to = "super::parent_product::Entity",
         from = "Column::ParentId",
-        to = "super::parent_no_code_product::Column::Id",
+        to = "super::parent_product::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    ParentNoCodeProduct,
+    ParentProduct,
 }
 
 impl Related<super::business::Entity> for Entity {
@@ -45,9 +42,9 @@ impl Related<super::business::Entity> for Entity {
     }
 }
 
-impl Related<super::parent_no_code_product::Entity> for Entity {
+impl Related<super::parent_product::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::ParentNoCodeProduct.def()
+        Relation::ParentProduct.def()
     }
 }
 

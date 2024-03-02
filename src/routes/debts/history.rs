@@ -15,6 +15,8 @@ use crate::routes::sell::{ItemType, History as RentHistoryProducts};
 use crate::routes::utils::get_parent::{get_parent_by_id, Parent};
 use axum::extract::Query;
 
+
+
 const DEFAULT_PAGE_SIZE: i32 = 5;
 const DEFAULT_PAGE: i32 = 1;
 
@@ -23,7 +25,7 @@ struct History{
     id: i32,
     purchase_products: DetailedHistory,
     buy_date: DateTimeWithTimeZone,
-    grant_total: i32
+    grant_total: f64
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,7 +34,7 @@ struct DetailedProduct{
     title: String,
     main_image: Option<String>,
     quantity: i32,
-    sell_price: i32
+    sell_price: f64
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct DetailedWeightItem{
@@ -40,7 +42,7 @@ struct DetailedWeightItem{
     title: String,
     main_image: Option<String>,
     kg_weight: f64,
-    sell_price: i32
+    sell_price: f64
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,7 +51,7 @@ struct DetailedNoCodeProduct{
     title: String,
     main_image: Option<String>,
     quantity: i32,
-    sell_price: i32
+    sell_price: f64
 }
 
 #[derive(Serialize, Deserialize, Debug)]

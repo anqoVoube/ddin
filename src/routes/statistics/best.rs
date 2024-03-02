@@ -7,15 +7,18 @@ use chrono::{NaiveDate, NaiveDateTime, Local, Utc, Datelike, TimeZone};
 use http::StatusCode;
 use multipart::server::nickel::nickel::MediaType::C;
 use scylla::{IntoTypedRows, Session as ScyllaDBSession};
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{ColumnTrait, DatabaseConnection, DeriveColumn, DeriveModel, DerivePartialModel, EntityTrait, FromQueryResult, QuerySelect};
 use serde::{Deserialize, Serialize};
 use crate::core::auth::middleware::{Auth, CustomHeader};
-use crate::database::prelude::Business;
+use crate::database::prelude::{Business, ProfitStatistics};
+use crate::database::product_statistics;
 use crate::routes::parent_product::fetch::get_object_by_id;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::sell::{EnumValue, ItemType};
 use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
 use crate::routes::statistics::{get_date_range, Search, Types};
+use crate::database::prelude::ProductStatistics;
+use sea_orm::QueryFilter;
 
 
 trait NaiveDateExt {
@@ -50,9 +53,34 @@ impl NaiveDateExt for chrono::NaiveDate {
 pub struct StatisticsResponse{
     best_quantity: BestQuantity,
     best_profit: BestProfit,
-    prices: Vec<i32>,
+    prices: Vec<f64>,
     namings: Vec<String>
 }
+
+
+#[derive(Debug, PartialEq, FromQueryResult)]
+struct PartialProductStats {
+    pub parent_id: i32,
+    pub quantity_sum: i32,
+    pub item_type: i16,
+}
+
+
+#[derive(Debug, PartialEq, FromQueryResult)]
+struct PartialProfitProductStats {
+    pub parent_id: i32,
+    pub date: NaiveDate,
+    pub total_profit: f64,
+    pub item_type: i16,
+}
+
+
+#[derive(Debug, PartialEq, FromQueryResult)]
+struct PartialProfitStats {
+    pub date: NaiveDate,
+    pub total_profit: f64,
+}
+
 
 #[debug_handler]
 pub async fn full(
@@ -73,66 +101,100 @@ pub async fn full(
 
     let (start_date, end_date, namings) = get_date_range(&r#type, prev);
 
-
-    let query = "SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 3) GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
-
-    let results = scylla.query(
-        query,
-        (business_id, start_date, end_date)
-    ).await.expect("Failed to query");
+    // rust query below query
+    // SELECT parent_id, item_type, SUM(quantity) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? AND item_type IN (1, 3) GROUP BY parent_id, business_id, item_type
+    let products = ProductStatistics::find()
+        .filter(
+            product_statistics::Column::BusinessId.eq(business_id)
+                .and(product_statistics::Column::Date.gte(start_date))
+                .and(product_statistics::Column::Date.lte(end_date))
+                .and(product_statistics::Column::ItemType.eq(1).or(product_statistics::Column::ItemType.eq(3)))
+        )
+        .group_by(product_statistics::Column::ParentId)
+        .group_by(product_statistics::Column::BusinessId)
+        .group_by(product_statistics::Column::ItemType)
+        .select_only()
+        .column(product_statistics::Column::ParentId)
+        .column(product_statistics::Column::ItemType)
+        .column_as(product_statistics::Column::Quantity.sum(), "quantity_sum")
+        .into_model::<PartialProductStats>()
+        .all(&database)
+        .await
+        .unwrap();
 
     let mut max_quantity_parent_id = 0;
     let mut max_quantity = 0;
     let mut max_quantity_item_type = 1;
-    let brah = results.rows.expect("");
-    println!("{:?}", brah);
-    println!("{}", brah.len());
-    for row in brah.into_typed::<(i32, i8, i32)>() {
-        if let Ok(result) = row{
-            let (parent_id, item_type, quantity_sum) = result;
-            if quantity_sum > max_quantity{
-                max_quantity_parent_id = parent_id;
-                max_quantity = quantity_sum;
-                max_quantity_item_type = item_type;
-            }
+    println!("{:?}", products);
+    println!("{}", products.len());
+    for product in products{
+        if product.quantity_sum > max_quantity{
+            max_quantity_parent_id = product.parent_id;
+            max_quantity = product.quantity_sum;
+            max_quantity_item_type = product.item_type;
         }
     }
 
-    let query = "SELECT parent_id, date, item_type, SUM(profit) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? GROUP BY parent_id, business_id, item_type ALLOW FILTERING";
 
-    let results = scylla.query(
-        query,
-        (business_id, start_date, end_date)
-    ).await.expect("Failed to query via scylla");
+    // convert the below query to rust sea-orm
+    // SELECT parent_id, date, item_type, SUM(profit) FROM statistics.products WHERE business_id = ? AND date >= ? AND date <= ? GROUP BY parent_id, business_id, item_type
+
+    let products = ProductStatistics::find()
+        .filter(
+            product_statistics::Column::BusinessId.eq(business_id)
+                .and(product_statistics::Column::Date.gte(start_date))
+                .and(product_statistics::Column::Date.lte(end_date))
+        )
+        .group_by(product_statistics::Column::ParentId)
+        .group_by(product_statistics::Column::BusinessId)
+        .group_by(product_statistics::Column::ItemType)
+        .select_only()
+        .column(product_statistics::Column::ParentId)
+        .column(product_statistics::Column::Date)
+        .column(product_statistics::Column::ItemType)
+        .column_as(product_statistics::Column::Profit.sum(), "total_profit")
+        .into_model::<PartialProfitProductStats>()
+        .all(&database)
+        .await
+        .unwrap();
 
     let mut max_profit_parent_id = 0;
-    let mut max_profit = 0;
+    let mut max_profit = 0f64;
     let mut max_profit_item_type = 1;
-    let mut profit_by_date: BTreeMap<NaiveDate, i32> = BTreeMap::new();
-    for row in results.rows.expect("failed to get rows").into_typed::<(i32, NaiveDate, i8, i32)>() {
-        if let Ok(result) = row{
-            let (parent_id, date, item_type, profit) = result;
-            if profit > max_profit{
-                max_profit_parent_id = parent_id;
-                max_profit = profit;
-                max_profit_item_type = item_type;
-            }
+    let mut profit_by_date: BTreeMap<NaiveDate, f64> = BTreeMap::new();
+    for product in products{
+        if product.total_profit > max_profit{
+            max_profit_parent_id = product.parent_id;
+            max_profit = product.total_profit;
+            max_profit_item_type = product.item_type;
         }
     }
 
-    let query = "SELECT date, SUM(profit) FROM statistics.profits WHERE business_id = ? AND date >= ? AND date <= ? GROUP BY date, business_id ALLOW FILTERING";
 
-    let results = scylla.query(
-        query,
-        (business_id, start_date, end_date)
-    ).await.expect("Failed to query");
 
-    for row in results.rows.expect("failed to get rows").into_typed::<(NaiveDate, i32)>() {
-        if let Ok(result) = row{
-            let (date, profit) = result;
-            *profit_by_date.entry(date).or_insert(0) += profit;
-        }
+    // convert the below query to rust sea-orm
+    // SELECT date, SUM(profit) FROM statistics.profits WHERE business_id = ? AND date >= ? AND date <= ? GROUP BY date, business_id ALLOW FILTERING
+
+    let profits = ProfitStatistics::find()
+        .filter(
+            product_statistics::Column::BusinessId.eq(business_id)
+                .and(product_statistics::Column::Date.gte(start_date))
+                .and(product_statistics::Column::Date.lte(end_date))
+        )
+        .group_by(product_statistics::Column::Date)
+        .group_by(product_statistics::Column::BusinessId)
+        .select_only()
+        .column(product_statistics::Column::Date)
+        .column_as(product_statistics::Column::Profit.sum(), "total_profit")
+        .into_model::<PartialProfitStats>()
+        .all(&database)
+        .await
+        .unwrap();
+
+    for profit in profits {
+        *profit_by_date.entry(profit.date).or_insert(0f64) += profit.total_profit;
     }
+
     let best_quantity = match max_quantity_parent_id{
         0 => BestQuantity{
             title: "No items yet".to_string(),
@@ -143,7 +205,7 @@ pub async fn full(
             &database,
             max_quantity_parent_id,
             ItemType::from_value(max_quantity_item_type)
-        ).await.unwrap().fetch_data(StatsType::Quantity, max_quantity) {
+        ).await.unwrap().fetch_data(StatsType::Quantity, max_quantity as f64) {
             Stats::Quantity(stats) => stats,
             _ => panic!("Wrong stats type")
         }
@@ -153,7 +215,7 @@ pub async fn full(
         0 => BestProfit{
             title: "No items yet".to_string(),
             main_image: Some("default.png".to_string()),
-            overall_profit: 0
+            overall_profit: 0f64
         },
         _ => match get_parent_by_id(
             &database,
@@ -164,7 +226,7 @@ pub async fn full(
             _ => panic!("Wrong stats type")
         }
     };
-    let mut prices: Vec<i32> = (0..namings.len()).map(|_| 0).collect();
+    let mut prices: Vec<f64> = (0..namings.len()).map(|_| 0f64).collect();
     if has_access {
         for (date, total_profit) in profit_by_date {
             println!("DATE!!! {}", date);
@@ -206,7 +268,7 @@ pub async fn full(
                     best_profit: BestProfit{
                     title: "No items yet".to_string(),
                     main_image: Some("default.png".to_string()),
-                    overall_profit: 0
+                    overall_profit: 0f64
                 },
                     prices,
                     namings

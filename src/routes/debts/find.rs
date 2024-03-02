@@ -34,7 +34,7 @@ pub struct SmallDebt{
 pub struct FullDebt{
     id: i32,
     name: String,
-    price: i32
+    price: f64
 }
 
 #[derive(Serialize,  Deserialize, Debug)]

@@ -19,6 +19,8 @@ pub use super::parent_weight_item::Entity as ParentWeightItem;
 pub use super::private_workers_privateworker::Entity as PrivateWorkersPrivateworker;
 pub use super::private_workers_privateworker_categories::Entity as PrivateWorkersPrivateworkerCategories;
 pub use super::product::Entity as Product;
+pub use super::product_statistics::Entity as ProductStatistics;
+pub use super::profit_statistics::Entity as ProfitStatistics;
 pub use super::rent::Entity as Rent;
 pub use super::rent_history::Entity as RentHistory;
 pub use super::services_location::Entity as ServicesLocation;

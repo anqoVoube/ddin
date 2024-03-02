@@ -4,6 +4,7 @@ use axum::extract::Path;
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use log::{error, info};
+
 use scylla::{IntoTypedRows, Session};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -27,7 +28,7 @@ pub struct ProductBody {
 pub struct ParentProductBody {
     parent_id: i32,
     quantity: i32,
-    sell_price: i32
+    sell_price: f64
 }
 
 
@@ -35,14 +36,14 @@ pub struct ParentProductBody {
 pub struct NoCodeProductBody {
     id: i32,
     quantity: i32,
-    sell_price: i32
+    sell_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParentNoCodeProductBody {
     parent_id: i32,
     quantity: i32,
-    sell_price: i32
+    sell_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,13 +61,13 @@ pub struct ParentWeightItemBody {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DebtUserBody{
     id: i32,
-    paid_price: i32
+    paid_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PayBody {
     id: i32,
-    paid_price: i32
+    paid_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,7 +126,7 @@ pub async fn update(
                 return internal_server_error();
             }
             let new_rent_history = rent_history::ActiveModel {
-                grand_total: Set(0),
+                grand_total: Set(0f64),
                 paid_amount: Set(paid_price),
                 products: Set(json!(RentHistoryProducts{
                     products: vec![],

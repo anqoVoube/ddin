@@ -107,27 +107,27 @@ pub async fn init_scylla() -> Session{
         .await
         .expect("Failed to create keyspace");
 
-    session
-        .query(
-            "CREATE TABLE IF NOT EXISTS statistics.products (
-                parent_id int,
-                item_type tinyint,
-                quantity int,
-                profit int,
-                business_id int,
-                date date,
-                PRIMARY KEY ((parent_id, business_id, item_type), date)
-            );",
-            &[],
-        )
-        .await
-        .expect("Failed to create table products");
+        session
+            .query(
+                "CREATE TABLE IF NOT EXISTS statistics.products (
+                    parent_id int,
+                    item_type tinyint,
+                    quantity int,
+                    profit decimal,
+                    business_id int,
+                    date date,
+                    PRIMARY KEY ((parent_id, business_id, item_type), date)
+                );",
+                &[],
+            )
+            .await
+            .expect("Failed to create table products");
 
     session
         .query(
             "CREATE TABLE IF NOT EXISTS statistics.profits (
                 business_id int,
-                profit int,
+                profit decimal,
                 date date,
                 PRIMARY KEY ((date, business_id))
             );",
@@ -193,21 +193,21 @@ pub async fn init_bot() -> Bot{
             .branch(callback_query_handler)
     }
 
-    tokio::spawn(async move {
-        Dispatcher::builder(
-            bot,
-            schema()
-        )
-            .dependencies(dptree::deps![InMemStorage::<State>::new()])
-            .build()
-            .dispatch()
-            // .dispatch_with_listener(
-            //     listener,
-            //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
-            // )
-            .await;
-        }
-    );
+    // tokio::spawn(async move {
+    //     Dispatcher::builder(
+    //         bot,
+    //         schema()
+    //     )
+    //         .dependencies(dptree::deps![InMemStorage::<State>::new()])
+    //         .build()
+    //         .dispatch()
+    //         // .dispatch_with_listener(
+    //         //     listener,
+    //         //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
+    //         // )
+    //         .await;
+    //     }
+    // );
     Bot::new(dotenv!("BOT_TOKEN"))
 }
 

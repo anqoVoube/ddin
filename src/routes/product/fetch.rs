@@ -5,6 +5,7 @@ use chrono::NaiveDate;
 use http::{header, StatusCode};
 
 
+
 use sea_orm::{Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use crate::database::product::Entity as Product;
@@ -30,7 +31,7 @@ pub struct Body {
 pub struct ProductSchema {
     id: i32,
     title: String,
-    price: i32,
+    price: f64,
     main_image: Option<String>,
     max_quantity: i32,
     expiration_date: Option<NaiveDate>

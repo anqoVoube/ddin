@@ -29,7 +29,7 @@ pub struct BestQuantity{
 pub struct BestProfit{
     pub title: String,
     pub main_image: Option<String>,
-    pub overall_profit: i32
+    pub overall_profit: f64
 }
 
 pub enum Stats{
@@ -43,11 +43,11 @@ pub enum StatsType{
 }
 
 pub trait ParentGetter{
-    fn fetch_data(&self, stats_type: StatsType, overall: i32) -> Stats;
+    fn fetch_data(&self, stats_type: StatsType, overall: f64) -> Stats;
 }
 
 impl ParentGetter for Parent{
-    fn fetch_data(&self, stats_type: StatsType, overall: i32) -> Stats {
+    fn fetch_data(&self, stats_type: StatsType, overall: f64) -> Stats {
         match self{
             Parent::Product(model) => {
                 match stats_type{
@@ -55,7 +55,7 @@ impl ParentGetter for Parent{
                         Stats::Quantity(BestQuantity{
                         title: model.title.clone(),
                         main_image: model.main_image.clone(),
-                        overall_quantity: overall
+                        overall_quantity: overall as i32
                     }),
                     StatsType::Profit =>
                         Stats::Profit(BestProfit{
@@ -70,7 +70,7 @@ impl ParentGetter for Parent{
                     StatsType::Quantity => Stats::Quantity(BestQuantity{
                         title: model.title.clone(),
                         main_image: model.main_image.clone(),
-                        overall_quantity: overall
+                        overall_quantity: overall as i32
                     }),
                     StatsType::Profit => Stats::Profit(BestProfit{
                         title: model.title.clone(),
@@ -84,7 +84,7 @@ impl ParentGetter for Parent{
                     StatsType::Quantity => Stats::Quantity(BestQuantity{
                         title: model.title.clone(),
                         main_image: model.main_image.clone(),
-                        overall_quantity: overall
+                        overall_quantity: overall as i32
                     }),
                     StatsType::Profit => Stats::Profit(BestProfit{
                         title: model.title.clone(),

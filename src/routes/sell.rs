@@ -4,19 +4,24 @@ use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use log::{error, info};
 use mongodb::Database;
+
+use rust_decimal_macros::dec;
 use scylla::{IntoTypedRows, Session};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
+use scylla::_macro_internal::Value;
+use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::{DateTimeUtc, DateTimeWithTimeZone};
 use serde_json::json;
 use crate::core::auth::middleware::{Auth, CustomHeader};
-use crate::database::prelude::{NoCodeProduct, Rent, WeightItem};
+use crate::database::prelude::{NoCodeProduct, ProductStatistics, Rent, WeightItem};
 use crate::database::product::Entity as Product;
-use crate::database::{no_code_product, product, rent, rent_history, weight_item};
+use crate::database::{no_code_product, product, product_statistics, profit_statistics, rent, rent_history, weight_item};
+use crate::database::prelude::ProfitStatistics;
 use crate::routes::ScyllaDBConnection;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
-
+use sea_orm::QueryFilter;
+use sea_orm::ColumnTrait;
 fn default_as_false() -> bool {
     false
 }
@@ -32,9 +37,8 @@ pub struct ProductBody {
 pub struct ParentProductBody {
     pub parent_id: i32,
     pub quantity: i32,
-    pub sell_price: i32
+    pub sell_price: f64
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoCodeProductBody {
@@ -46,7 +50,7 @@ pub struct NoCodeProductBody {
 pub struct ParentNoCodeProductBody {
     pub parent_id: i32,
     pub quantity: i32,
-    pub sell_price: i32
+    pub sell_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,13 +63,13 @@ pub struct WeightItemBody {
 pub struct ParentWeightItemBody {
     pub parent_id: i32,
     pub kg_weight: f64,
-    pub sell_price: i32
+    pub sell_price: f64
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DebtUserBody{
     id: i32,
-    paid_price: i32
+    paid_price: f64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -90,12 +94,12 @@ pub enum ItemType{
 }
 
 pub trait EnumValue{
-    fn get_value(&self) -> i8;
-    fn from_value(value: i8) -> Self;
+    fn get_value(&self) -> i16;
+    fn from_value(value: i16) -> Self;
 }
 
 impl EnumValue for ItemType{
-    fn get_value(&self) -> i8 {
+    fn get_value(&self) -> i16 {
         match self {
             ItemType::Product => 1,
             ItemType::WeightItem => 2,
@@ -103,7 +107,7 @@ impl EnumValue for ItemType{
         }
     }
 
-    fn from_value(value: i8) -> Self {
+    fn from_value(value: i16) -> Self {
         match value {
             1 => ItemType::Product,
             2 => ItemType::WeightItem,
@@ -126,7 +130,7 @@ pub async fn sell(
     let mut history_products: Vec<ParentProductBody> = vec!();
     let mut history_weight_items: Vec<ParentWeightItemBody> = vec!();
     let mut history_no_code_products: Vec<ParentNoCodeProductBody> = vec!();
-    let mut grant_total = 0;
+    let mut grant_total = 0f64;
     for product_instance in &sell.products{
         match Product::find_by_id(product_instance.id)
             .one(&database).await{
@@ -136,7 +140,7 @@ pub async fn sell(
                 let total = pear.quantity.clone().unwrap();
                 let parent_id = pear.parent_id.clone().unwrap();
                 let price = pear.price.clone().unwrap();
-                grant_total += product_instance.quantity * price;
+                grant_total += product_instance.quantity as f64 * price;
 
                 history_products.push(ParentProductBody{
                     parent_id: parent_id,
@@ -160,53 +164,58 @@ pub async fn sell(
                         return internal_server_error();
                     } else {
                         let current_date = Utc::now().naive_utc().date();
+                        match ProductStatistics::find().filter(
+                            Condition::all()
+                                .add(product_statistics::Column::ParentId.eq(parent_id))
+                                .add(product_statistics::Column::BusinessId.eq(business_id))
+                                .add(product_statistics::Column::ItemType.eq(ItemType::Product.get_value()))
+                                .add(product_statistics::Column::Date.eq(current_date))
 
-                        let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (parent_id, business_id, ItemType::Product.get_value(), current_date))
-                            .await.unwrap();
-
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
-                            Some(row) => {
-                                let (current_quantity, current_profit) = row.expect("couldn't parse");
-                                let new_quantity = current_quantity + product_instance.quantity;
-                                let new_profit = current_profit + product_instance.quantity * profit;
-                                let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::Product.get_value(), current_date))
-                                    .await.unwrap();
+                        ).one(&database).await {
+                            Ok(Some(product_stats_instance)) => {
+                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + product_instance.quantity);
+                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
+                                product_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.products (parent_id, quantity, profit, business_id, date, item_type) VALUES (?, ?, ?, ?, ?, ?);";
+                            Ok(None) => {
+                                let product_stats_instance = product_statistics::ActiveModel {
+                                    parent_id: Set(parent_id),
+                                    quantity: Set(product_instance.quantity),
+                                    profit: Set(product_instance.quantity as f64 * profit),
+                                    business_id: Set(business_id),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
 
-                                scylla.query(
-                                    insert,
-                                    (parent_id, product_instance.quantity, profit * product_instance.quantity, business_id, current_date, ItemType::Product.get_value())
-                                ).await.expect("Tired");
+                                product_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
 
-                        let select_query = "SELECT profit FROM statistics.profits WHERE business_id = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (business_id, current_date))
-                            .await.unwrap();
-
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
-                            Some(row) => {
-                                let (current_profit, ) = row.expect("couldn't parse");
-                                let new_profit = current_profit + product_instance.quantity * profit;
-                                let update_query = "UPDATE statistics.profits SET profit = ? WHERE business_id = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_profit, business_id, current_date))
-                                    .await.unwrap();
+                        match ProfitStatistics::find().filter(
+                            Condition::all()
+                                .add(profit_statistics::Column::BusinessId.eq(business_id))
+                                .add(profit_statistics::Column::Date.eq(current_date))
+                        ).one(&database).await {
+                            Ok(Some(profit_stats_instance)) => {
+                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
+                                profit_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.profits (business_id, profit, date) VALUES (?, ?, ?);";
-
-                                scylla.query(
-                                    insert,
-                                    (business_id, profit * product_instance.quantity, current_date)
-                                ).await.expect("Tired");
+                            Ok(None) => {
+                                let profit_stats_instance = profit_statistics::ActiveModel {
+                                    business_id: Set(business_id),
+                                    profit: Set(product_instance.quantity as f64 * profit),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
+                                profit_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
                     }
@@ -230,7 +239,7 @@ pub async fn sell(
                 let parent_id = pear.parent_id.clone().unwrap();
                 let total = pear.kg_weight.clone().unwrap();
                 let price = pear.price.clone().unwrap();
-                grant_total += (weight_item_instance.kg_weight * price as f64) as i32;
+                grant_total += weight_item_instance.kg_weight * price;
 
                 history_weight_items.push(ParentWeightItemBody{
                     parent_id: parent_id,
@@ -254,53 +263,57 @@ pub async fn sell(
                         return internal_server_error();
                     } else {
                         let current_date = Utc::now().naive_utc().date();
-
-                        let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
-                            .await.unwrap();
-
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
-                            Some(row) => {
-                                let (current_quantity, current_profit) = row.expect("couldn't parse");
-                                let new_quantity = current_quantity +  (weight_item_instance.kg_weight * 1000.0) as i32;
-                                let new_profit = current_profit + (weight_item_instance.kg_weight * profit as f64) as i32;
-                                let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::WeightItem.get_value(), current_date))
-                                    .await.unwrap();
+                        match ProductStatistics::find().filter(
+                            Condition::all()
+                                .add(product_statistics::Column::ParentId.eq(parent_id))
+                                .add(product_statistics::Column::BusinessId.eq(business_id))
+                                .add(product_statistics::Column::ItemType.eq(ItemType::WeightItem.get_value()))
+                                .add(product_statistics::Column::Date.eq(current_date))
+                        ).one(&database).await {
+                            Ok(Some(product_stats_instance)) => {
+                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap()+ (weight_item_instance.kg_weight * 1000f64) as i32);
+                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
+                                product_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.products (parent_id, quantity, profit, business_id, date, item_type) VALUES (?, ?, ?, ?, ?, ?);";
+                            Ok(None) => {
+                                let product_stats_instance = product_statistics::ActiveModel {
+                                    parent_id: Set(parent_id),
+                                    quantity: Set((weight_item_instance.kg_weight * 1000f64) as i32),
+                                    profit: Set(weight_item_instance.kg_weight * profit),
+                                    business_id: Set(business_id),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
 
-                                scylla.query(
-                                    insert,
-                                    (parent_id,  (weight_item_instance.kg_weight * 1000.0) as i32, (weight_item_instance.kg_weight * profit as f64) as i32, business_id, current_date, ItemType::WeightItem.get_value())
-                                ).await.expect("Tired");
+                                product_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
 
-                        let select_query = "SELECT profit FROM statistics.profits WHERE business_id = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (business_id, current_date))
-                            .await.unwrap();
-
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
-                            Some(row) => {
-                                let (current_profit, ) = row.expect("couldn't parse");
-                                let new_profit = current_profit + (weight_item_instance.kg_weight * profit as f64) as i32;
-                                let update_query = "UPDATE statistics.profits SET profit = ? WHERE business_id = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_profit, business_id, current_date))
-                                    .await.unwrap();
+                        match ProfitStatistics::find().filter(
+                            Condition::all()
+                                .add(profit_statistics::Column::BusinessId.eq(business_id))
+                                .add(profit_statistics::Column::Date.eq(current_date))
+                        ).one(&database).await {
+                            Ok(Some(profit_stats_instance)) => {
+                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
+                                profit_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.profits (business_id, profit, date) VALUES (?, ?, ?);";
-
-                                scylla.query(
-                                    insert,
-                                    (business_id, (weight_item_instance.kg_weight * profit as f64) as i32, current_date)
-                                ).await.expect("Tired");
+                            Ok(None) => {
+                                let profit_stats_instance = profit_statistics::ActiveModel {
+                                    business_id: Set(business_id),
+                                    profit: Set(weight_item_instance.kg_weight * profit),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
+                                profit_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
                     }
@@ -325,7 +338,7 @@ pub async fn sell(
                 let profit = pear.profit.clone().unwrap();
                 let parent_id = pear.parent_id.clone().unwrap();
                 let price = pear.price.clone().unwrap();
-                grant_total += no_code_product_instance.quantity * price;
+                grant_total += no_code_product_instance.quantity as f64 * price;
 
                 history_no_code_products.push(ParentNoCodeProductBody{
                     parent_id: parent_id,
@@ -344,58 +357,63 @@ pub async fn sell(
                     }
                 } else {
                     pear.quantity = Set(total - no_code_product_instance.quantity);
-
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
                     } else {
                         let current_date = Utc::now().naive_utc().date();
-                        let select_query = "SELECT quantity, profit FROM statistics.products WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
-                            .await.unwrap();
+                        match ProductStatistics::find().filter(
+                            Condition::all()
+                                .add(product_statistics::Column::ParentId.eq(parent_id))
+                                .add(product_statistics::Column::BusinessId.eq(business_id))
+                                .add(product_statistics::Column::ItemType.eq(ItemType::NoCodeProduct.get_value()))
+                                .add(product_statistics::Column::Date.eq(current_date))
 
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, i32)>().next() {
-                            Some(row) => {
-                                let (current_quantity, current_profit) = row.expect("couldn't parse");
-                                let new_quantity = current_quantity + no_code_product_instance.quantity;
-                                let new_profit = current_profit + (no_code_product_instance.quantity * profit);
-                                let update_query = "UPDATE statistics.products SET quantity = ?, profit = ? WHERE parent_id = ? AND business_id = ? AND item_type = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_quantity, new_profit, parent_id, business_id, ItemType::NoCodeProduct.get_value(), current_date))
-                                    .await.unwrap();
+                        ).one(&database).await {
+                            Ok(Some(product_stats_instance)) => {
+                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + no_code_product_instance.quantity);
+                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
+                                product_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.products (parent_id, quantity, profit, business_id, date, item_type) VALUES (?, ?, ?, ?, ?, ?);";
+                            Ok(None) => {
+                                let product_stats_instance = product_statistics::ActiveModel {
+                                    parent_id: Set(parent_id),
+                                    quantity: Set(no_code_product_instance.quantity),
+                                    profit: Set(no_code_product_instance.quantity as f64 * profit),
+                                    business_id: Set(business_id),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
 
-                                scylla.query(
-                                    insert,
-                                    (parent_id, no_code_product_instance.quantity, no_code_product_instance.quantity * profit, business_id, current_date, ItemType::NoCodeProduct.get_value())
-                                ).await.expect("Tired");
+                                product_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
 
-                        let select_query = "SELECT profit FROM statistics.profits WHERE business_id = ? AND date = ?";
-                        let result = scylla
-                            .query(select_query, (business_id, current_date))
-                            .await.unwrap();
-
-                        match result.rows.expect("failed to get rows").into_typed::<(i32, )>().next() {
-                            Some(row) => {
-                                let (current_profit, ) = row.expect("couldn't parse");
-                                let new_profit = current_profit + no_code_product_instance.quantity * profit;
-                                let update_query = "UPDATE statistics.profits SET profit = ? WHERE business_id = ? AND date = ?";
-                                scylla
-                                    .query(update_query, (new_profit, business_id, current_date))
-                                    .await.unwrap();
+                        match ProfitStatistics::find().filter(
+                            Condition::all()
+                                .add(profit_statistics::Column::BusinessId.eq(business_id))
+                                .add(profit_statistics::Column::Date.eq(current_date))
+                        ).one(&database).await {
+                            Ok(Some(profit_stats_instance)) => {
+                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
+                                profit_stats_instance.update(&database).await.unwrap();
                             },
-                            None => {
-                                let insert = "INSERT INTO statistics.profits (business_id, profit, date) VALUES (?, ?, ?);";
-
-                                scylla.query(
-                                    insert,
-                                    (business_id, profit * no_code_product_instance.quantity, current_date)
-                                ).await.expect("Tired");
+                            Ok(None) => {
+                                let profit_stats_instance = profit_statistics::ActiveModel {
+                                    business_id: Set(business_id),
+                                    profit: Set(no_code_product_instance.quantity as f64 * profit),
+                                    date: Set(current_date),
+                                    ..Default::default()
+                                };
+                                profit_stats_instance.save(&database).await.unwrap();
+                            },
+                            Err(e) => {
+                                println!("{:?}", e);
                             }
                         };
                     }

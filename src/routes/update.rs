@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use sea_orm::{DatabaseConnection, EntityTrait, ActiveValue::Set, ActiveModelTrait};
 use axum::response::{IntoResponse, Response};
 use log::error;
+
 use crate::database::prelude::{NoCodeProduct, Product, WeightItem};
 use crate::database::{no_code_product, product, weight_item};
 use crate::routes::utils::{bad_request, default_ok, internal_server_error};
@@ -12,7 +13,7 @@ use crate::routes::utils::{bad_request, default_ok, internal_server_error};
 pub struct RequestBody{
     id: i32,
     item_type: i8,
-    price: Option<i32>,
+    price: Option<f64>,
     quantity: Option<i32>,
     kg_weight: Option<f64>
 }

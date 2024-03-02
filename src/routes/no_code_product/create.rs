@@ -17,8 +17,8 @@ use crate::routes::utils::{default_created, internal_server_error};
 #[derive(Clone, Deserialize)]
 pub struct Body {
     parent_id: i32,
-    price: i32,
-    orig_price: i32,
+    price: f64,
+    orig_price: f64,
     quantity: i32,
     produced_date: Option<NaiveDate>
 }

@@ -3,6 +3,7 @@ use axum::response::{Response, IntoResponse};
 use chrono::NaiveDate;
 use http::StatusCode;
 use log::{error, info};
+
 use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use crate::routes::{AppConnections};
@@ -17,8 +18,8 @@ use crate::routes::utils::{default_created, internal_server_error};
 #[derive(Clone, Deserialize)]
 pub struct Body {
     parent_id: i32,
-    price: i32,
-    orig_price: i32,
+    price: f64,
+    orig_price: f64,
     kg_weight: f64,
     produced_date: Option<NaiveDate>
 }

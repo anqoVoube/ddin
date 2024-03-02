@@ -2,14 +2,15 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "rent")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: String,
     pub business_id: i32,
-    pub price: i32,
+    #[sea_orm(column_type = "Double")]
+    pub price: f64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

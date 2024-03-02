@@ -2,17 +2,19 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "rent_history")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     #[sea_orm(column_type = "JsonBinary")]
     pub products: Json,
-    pub grand_total: i32,
-    pub paid_amount: i32,
     pub buy_date: DateTimeWithTimeZone,
     pub rent_user_id: i32,
+    #[sea_orm(column_type = "Double")]
+    pub grand_total: f64,
+    #[sea_orm(column_type = "Double")]
+    pub paid_amount: f64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

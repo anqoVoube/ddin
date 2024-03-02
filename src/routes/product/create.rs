@@ -4,6 +4,7 @@ use sea_orm::{ActiveModelTrait, Condition, DatabaseConnection, EntityTrait, Quer
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
 use log::{error, info};
+
 use sea_orm::ActiveValue::Set;
 use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::Product;
@@ -16,8 +17,8 @@ use sea_orm::ColumnTrait;
 pub struct Body {
     parent_id: i32,
     quantity: Option<u16>,
-    orig_price: i32,
-    price: i32,
+    orig_price: f64,
+    price: f64,
     produced_date: Option<NaiveDate>,
     expiration_date: Option<NaiveDate>,
 }

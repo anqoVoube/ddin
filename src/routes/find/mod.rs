@@ -15,6 +15,7 @@ use chrono::NaiveDate;
 use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use http::StatusCode;
+
 use sea_orm::sea_query::{Expr, Func};
 use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{NoCodeProduct, ParentNoCodeProduct, Product};
@@ -66,7 +67,7 @@ pub struct ProductSchema{
     id: i32,
     parent_id: i32,
     title: String,
-    price: i32,
+    price: f64,
     main_image: Option<String>,
     max_quantity: i32,
     expiration_date: Option<NaiveDate>
@@ -83,7 +84,7 @@ pub struct WeightItemSchema{
     id: i32,
     parent_id: i32,
     title: String,
-    price: i32,
+    price: f64,
     main_image: Option<String>,
     max_kg_weight: f64,
     expiration_date: Option<NaiveDate>,
@@ -101,7 +102,7 @@ pub struct NoCodeProductSchema{
     id: i32,
     parent_id: i32,
     title: String,
-    price: i32,
+    price: f64,
     main_image: Option<String>,
     max_quantity: i32,
     expiration_date: Option<NaiveDate>
