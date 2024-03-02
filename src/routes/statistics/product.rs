@@ -26,7 +26,7 @@ pub struct Search {
     r#type: Types,
     prev: u8,
     parent_id: i32,
-    item_type: i8
+    item_type: i16
 }
 
 
@@ -67,7 +67,7 @@ pub async fn get_product_stats(
     database: &DatabaseConnection,
     parent_id: i32,
     business_id: i32,
-    item_type: i8,
+    item_type: i16,
     r#type: Types,
     prev: u8
 ) -> Result<(Vec<i32>, Vec<f64>, Vec<String>), Box<dyn Error>> {
