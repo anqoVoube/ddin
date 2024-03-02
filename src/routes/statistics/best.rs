@@ -9,7 +9,7 @@ use sea_orm::{ColumnTrait, DatabaseConnection, DeriveColumn, DeriveModel, Derive
 use serde::{Deserialize, Serialize};
 use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{Business, ProfitStatistics};
-use crate::database::product_statistics;
+use crate::database::{product_statistics, profit_statistics};
 use crate::routes::sell::{EnumValue, ItemType};
 use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
 use crate::routes::statistics::{get_date_range, Search, Types};
@@ -169,13 +169,13 @@ pub async fn full(
 
     let profits = ProfitStatistics::find()
         .filter(
-            product_statistics::Column::BusinessId.eq(business_id)
-                .and(product_statistics::Column::Date.gte(start_date))
-                .and(product_statistics::Column::Date.lte(end_date))
+            profit_statistics::Column::BusinessId.eq(business_id)
+                .and(profit_statistics::Column::Date.gte(start_date))
+                .and(profit_statistics::Column::Date.lte(end_date))
         )
         .select_only()
-        .column(product_statistics::Column::Date)
-        .column(product_statistics::Column::Profit)
+        .column(profit_statistics::Column::Date)
+        .column(profit_statistics::Column::Profit)
         .into_model::<PartialProfitStats>()
         .all(&database)
         .await
