@@ -160,65 +160,65 @@ pub async fn sell(
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
-                    } else {
-                        let current_date = Utc::now().naive_utc().date();
-                        match ProductStatistics::find().filter(
-                            Condition::all()
-                                .add(product_statistics::Column::ParentId.eq(parent_id))
-                                .add(product_statistics::Column::BusinessId.eq(business_id))
-                                .add(product_statistics::Column::ItemType.eq(ItemType::Product.get_value()))
-                                .add(product_statistics::Column::Date.eq(current_date))
-
-                        ).one(&database).await {
-                            Ok(Some(product_stats_instance)) => {
-                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
-                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + product_instance.quantity);
-                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
-                                product_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let product_stats_instance = product_statistics::ActiveModel {
-                                    parent_id: Set(parent_id),
-                                    quantity: Set(product_instance.quantity),
-                                    profit: Set(product_instance.quantity as f64 * profit),
-                                    business_id: Set(business_id),
-                                    date: Set(current_date),
-                                    item_type: Set(ItemType::Product.get_value()),
-                                    ..Default::default()
-                                };
-
-                                product_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
-
-                        match ProfitStatistics::find().filter(
-                            Condition::all()
-                                .add(profit_statistics::Column::BusinessId.eq(business_id))
-                                .add(profit_statistics::Column::Date.eq(current_date))
-                        ).one(&database).await {
-                            Ok(Some(profit_stats_instance)) => {
-                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
-                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
-                                profit_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let profit_stats_instance = profit_statistics::ActiveModel {
-                                    business_id: Set(business_id),
-                                    profit: Set(product_instance.quantity as f64 * profit),
-                                    date: Set(current_date),
-                                    ..Default::default()
-                                };
-                                profit_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
                     }
                 }
+
+                let current_date = Utc::now().naive_utc().date();
+                match ProductStatistics::find().filter(
+                    Condition::all()
+                        .add(product_statistics::Column::ParentId.eq(parent_id))
+                        .add(product_statistics::Column::BusinessId.eq(business_id))
+                        .add(product_statistics::Column::ItemType.eq(ItemType::Product.get_value()))
+                        .add(product_statistics::Column::Date.eq(current_date))
+
+                ).one(&database).await {
+                    Ok(Some(product_stats_instance)) => {
+                        let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                        product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + product_instance.quantity);
+                        product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
+                        product_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let product_stats_instance = product_statistics::ActiveModel {
+                            parent_id: Set(parent_id),
+                            quantity: Set(product_instance.quantity),
+                            profit: Set(product_instance.quantity as f64 * profit),
+                            business_id: Set(business_id),
+                            date: Set(current_date),
+                            item_type: Set(ItemType::Product.get_value()),
+                            ..Default::default()
+                        };
+
+                        product_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
+
+                match ProfitStatistics::find().filter(
+                    Condition::all()
+                        .add(profit_statistics::Column::BusinessId.eq(business_id))
+                        .add(profit_statistics::Column::Date.eq(current_date))
+                ).one(&database).await {
+                    Ok(Some(profit_stats_instance)) => {
+                        let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                        profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + product_instance.quantity as f64 * profit);
+                        profit_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let profit_stats_instance = profit_statistics::ActiveModel {
+                            business_id: Set(business_id),
+                            profit: Set(product_instance.quantity as f64 * profit),
+                            date: Set(current_date),
+                            ..Default::default()
+                        };
+                        profit_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
             },
             Ok(None) => {
                 return not_found();
@@ -260,64 +260,63 @@ pub async fn sell(
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
-                    } else {
-                        let current_date = Utc::now().naive_utc().date();
-                        match ProductStatistics::find().filter(
-                            Condition::all()
-                                .add(product_statistics::Column::ParentId.eq(parent_id))
-                                .add(product_statistics::Column::BusinessId.eq(business_id))
-                                .add(product_statistics::Column::ItemType.eq(ItemType::WeightItem.get_value()))
-                                .add(product_statistics::Column::Date.eq(current_date))
-                        ).one(&database).await {
-                            Ok(Some(product_stats_instance)) => {
-                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
-                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap()+ (weight_item_instance.kg_weight * 1000f64) as i32);
-                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
-                                product_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let product_stats_instance = product_statistics::ActiveModel {
-                                    parent_id: Set(parent_id),
-                                    quantity: Set((weight_item_instance.kg_weight * 1000f64) as i32),
-                                    profit: Set(weight_item_instance.kg_weight * profit),
-                                    business_id: Set(business_id),
-                                    date: Set(current_date),
-                                    item_type: Set(ItemType::WeightItem.get_value()),
-                                    ..Default::default()
-                                };
-
-                                product_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
-
-                        match ProfitStatistics::find().filter(
-                            Condition::all()
-                                .add(profit_statistics::Column::BusinessId.eq(business_id))
-                                .add(profit_statistics::Column::Date.eq(current_date))
-                        ).one(&database).await {
-                            Ok(Some(profit_stats_instance)) => {
-                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
-                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
-                                profit_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let profit_stats_instance = profit_statistics::ActiveModel {
-                                    business_id: Set(business_id),
-                                    profit: Set(weight_item_instance.kg_weight * profit),
-                                    date: Set(current_date),
-                                    ..Default::default()
-                                };
-                                profit_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
                     }
                 }
+                let current_date = Utc::now().naive_utc().date();
+                match ProductStatistics::find().filter(
+                    Condition::all()
+                        .add(product_statistics::Column::ParentId.eq(parent_id))
+                        .add(product_statistics::Column::BusinessId.eq(business_id))
+                        .add(product_statistics::Column::ItemType.eq(ItemType::WeightItem.get_value()))
+                        .add(product_statistics::Column::Date.eq(current_date))
+                ).one(&database).await {
+                    Ok(Some(product_stats_instance)) => {
+                        let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                        product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap()+ (weight_item_instance.kg_weight * 1000f64) as i32);
+                        product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
+                        product_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let product_stats_instance = product_statistics::ActiveModel {
+                            parent_id: Set(parent_id),
+                            quantity: Set((weight_item_instance.kg_weight * 1000f64) as i32),
+                            profit: Set(weight_item_instance.kg_weight * profit),
+                            business_id: Set(business_id),
+                            date: Set(current_date),
+                            item_type: Set(ItemType::WeightItem.get_value()),
+                            ..Default::default()
+                        };
+
+                        product_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
+
+                match ProfitStatistics::find().filter(
+                    Condition::all()
+                        .add(profit_statistics::Column::BusinessId.eq(business_id))
+                        .add(profit_statistics::Column::Date.eq(current_date))
+                ).one(&database).await {
+                    Ok(Some(profit_stats_instance)) => {
+                        let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                        profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + weight_item_instance.kg_weight * profit);
+                        profit_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let profit_stats_instance = profit_statistics::ActiveModel {
+                            business_id: Set(business_id),
+                            profit: Set(weight_item_instance.kg_weight * profit),
+                            date: Set(current_date),
+                            ..Default::default()
+                        };
+                        profit_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
             },
             Ok(None) => {
                 return not_found();
@@ -360,66 +359,65 @@ pub async fn sell(
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
-                    } else {
-                        let current_date = Utc::now().naive_utc().date();
-                        match ProductStatistics::find().filter(
-                            Condition::all()
-                                .add(product_statistics::Column::ParentId.eq(parent_id))
-                                .add(product_statistics::Column::BusinessId.eq(business_id))
-                                .add(product_statistics::Column::ItemType.eq(ItemType::NoCodeProduct.get_value()))
-                                .add(product_statistics::Column::Date.eq(current_date))
-
-                        ).one(&database).await {
-                            Ok(Some(product_stats_instance)) => {
-                                let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
-                                product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + no_code_product_instance.quantity);
-                                product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
-                                product_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let product_stats_instance = product_statistics::ActiveModel {
-                                    parent_id: Set(parent_id),
-                                    quantity: Set(no_code_product_instance.quantity),
-                                    profit: Set(no_code_product_instance.quantity as f64 * profit),
-                                    business_id: Set(business_id),
-                                    date: Set(current_date),
-                                    item_type: Set(ItemType::NoCodeProduct.get_value()),
-                                    ..Default::default()
-                                };
-
-
-                                product_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
-
-                        match ProfitStatistics::find().filter(
-                            Condition::all()
-                                .add(profit_statistics::Column::BusinessId.eq(business_id))
-                                .add(profit_statistics::Column::Date.eq(current_date))
-                        ).one(&database).await {
-                            Ok(Some(profit_stats_instance)) => {
-                                let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
-                                profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
-                                profit_stats_instance.update(&database).await.unwrap();
-                            },
-                            Ok(None) => {
-                                let profit_stats_instance = profit_statistics::ActiveModel {
-                                    business_id: Set(business_id),
-                                    profit: Set(no_code_product_instance.quantity as f64 * profit),
-                                    date: Set(current_date),
-                                    ..Default::default()
-                                };
-                                profit_stats_instance.save(&database).await.unwrap();
-                            },
-                            Err(e) => {
-                                println!("{:?}", e);
-                            }
-                        };
                     }
                 }
+                let current_date = Utc::now().naive_utc().date();
+                match ProductStatistics::find().filter(
+                    Condition::all()
+                        .add(product_statistics::Column::ParentId.eq(parent_id))
+                        .add(product_statistics::Column::BusinessId.eq(business_id))
+                        .add(product_statistics::Column::ItemType.eq(ItemType::NoCodeProduct.get_value()))
+                        .add(product_statistics::Column::Date.eq(current_date))
+
+                ).one(&database).await {
+                    Ok(Some(product_stats_instance)) => {
+                        let mut product_stats_instance: product_statistics::ActiveModel = product_stats_instance.into();
+                        product_stats_instance.quantity = Set(product_stats_instance.quantity.unwrap() + no_code_product_instance.quantity);
+                        product_stats_instance.profit = Set(product_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
+                        product_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let product_stats_instance = product_statistics::ActiveModel {
+                            parent_id: Set(parent_id),
+                            quantity: Set(no_code_product_instance.quantity),
+                            profit: Set(no_code_product_instance.quantity as f64 * profit),
+                            business_id: Set(business_id),
+                            date: Set(current_date),
+                            item_type: Set(ItemType::NoCodeProduct.get_value()),
+                            ..Default::default()
+                        };
+
+
+                        product_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
+
+                match ProfitStatistics::find().filter(
+                    Condition::all()
+                        .add(profit_statistics::Column::BusinessId.eq(business_id))
+                        .add(profit_statistics::Column::Date.eq(current_date))
+                ).one(&database).await {
+                    Ok(Some(profit_stats_instance)) => {
+                        let mut profit_stats_instance: profit_statistics::ActiveModel = profit_stats_instance.into();
+                        profit_stats_instance.profit = Set(profit_stats_instance.profit.unwrap() + no_code_product_instance.quantity as f64 * profit);
+                        profit_stats_instance.update(&database).await.unwrap();
+                    },
+                    Ok(None) => {
+                        let profit_stats_instance = profit_statistics::ActiveModel {
+                            business_id: Set(business_id),
+                            profit: Set(no_code_product_instance.quantity as f64 * profit),
+                            date: Set(current_date),
+                            ..Default::default()
+                        };
+                        profit_stats_instance.save(&database).await.unwrap();
+                    },
+                    Err(e) => {
+                        println!("{:?}", e);
+                    }
+                };
             },
             Ok(None) => {
                 return not_found();
