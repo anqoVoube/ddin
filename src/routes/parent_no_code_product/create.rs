@@ -21,7 +21,6 @@ pub struct RequestBody{
     title: Option<String>,
     description: Option<String>,
     images: Vec<String>,
-    expiration_in_days: Option<i32>,
 }
 
 #[debug_handler]
@@ -36,7 +35,6 @@ pub async fn upload(
         title: None,
         description: None,
         images: vec!(),
-        expiration_in_days: None
     };
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
@@ -86,8 +84,6 @@ pub async fn upload(
                 }
             } else if name.ends_with("description"){
                 request_body.description = Some(text_data);
-            } else if name.ends_with("expiration"){
-                request_body.expiration_in_days = Some(text_data.parse::<i32>().unwrap());
             } else {
                 return bad_request("Invalid field name");
             }
@@ -99,7 +95,6 @@ pub async fn upload(
         description: Set(request_body.description.clone().unwrap_or("hello".to_owned())),
         main_image: Set(request_body.main_image.clone()),
         images: Set(request_body.images.clone()),
-        expiration_in_days: Set(request_body.expiration_in_days.unwrap_or(DEFAULT_EXPIRATION_IN_DAYS)),
         business_id: Set(Some(business_id)),
 
         ..Default::default()

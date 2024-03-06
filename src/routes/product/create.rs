@@ -19,7 +19,6 @@ pub struct Body {
     quantity: Option<u16>,
     orig_price: f64,
     price: f64,
-    produced_date: Option<NaiveDate>,
     expiration_date: Option<NaiveDate>,
 }
 
@@ -29,15 +28,11 @@ pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Extension(CustomHeader{business_id}): Extension<CustomHeader>,
-    Json(Body {parent_id, quantity, orig_price, price, produced_date, expiration_date}): Json<Body>
+    Json(Body {parent_id, quantity, orig_price, price, expiration_date}): Json<Body>
 ) -> Result<Response, Response> {
-    println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
+    println!("{} {:?} {} {}", parent_id, quantity, orig_price, price);
     match get_object_by_id(&database, parent_id).await{
         Ok(parent_product) => {
-            let expiration_date: NaiveDate = match expiration_date {
-                Some(date) => date,
-                _ => produced_date.unwrap() + chrono::Duration::days(parent_product.expiration_in_days as i64)
-            };
             match Product::find()
                 .filter(
                     Condition::all()
@@ -66,7 +61,7 @@ pub async fn create(
                     let new_product = product::ActiveModel {
                         price: Set(price),
                         profit: Set(price - orig_price),
-                        expiration_date: Set(Some(expiration_date)),
+                        expiration_date: Set(expiration_date),
                         business_id: Set(business_id),
                         quantity: Set(quantity.unwrap_or(1) as i32),
                         parent_id: Set(parent_id),

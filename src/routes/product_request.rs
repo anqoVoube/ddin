@@ -27,7 +27,6 @@ const FILE_COUNT: i32 = 50;
 #[derive(Debug, Default)]
 pub struct ObjectBody{
     title: Option<String>,
-    expiration_in_days: Option<i32>,
     code: Option<String>,
     main_image: Option<String>,
     images: Vec<String>
@@ -77,9 +76,6 @@ pub async fn upload(
                 orig_names.insert(count, text_data.clone());
                 object.title = Some(text_data);
 
-            } else if name.ends_with("expiration"){
-                println!("{}", text_data);
-                object.expiration_in_days = Some(text_data.parse::<i32>().unwrap());
             } else {
                 object.code = Some(text_data)
             }
@@ -114,7 +110,6 @@ pub async fn upload(
             description: Set("hello".to_string()),
             main_image: Set(object.main_image.clone()),
             images: Set(vec!()),
-            expiration_in_days: Set(object.expiration_in_days.unwrap()),
             ..Default::default()
         };
 
@@ -160,7 +155,6 @@ pub async fn upload_without_photo(
                 description: Set("hello".to_string()),
                 main_image: Set(None),
                 images: Set(vec!()),
-                expiration_in_days: Set(1000),
                 ..Default::default()
             };
 
