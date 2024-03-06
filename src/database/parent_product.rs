@@ -30,8 +30,6 @@ pub enum Relation {
     Business,
     #[sea_orm(has_many = "super::product::Entity")]
     Product,
-    #[sea_orm(has_many = "super::product_statistics::Entity")]
-    ProductStatistics,
 }
 
 impl Related<super::business::Entity> for Entity {
@@ -43,12 +41,6 @@ impl Related<super::business::Entity> for Entity {
 impl Related<super::product::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Product.def()
-    }
-}
-
-impl Related<super::product_statistics::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProductStatistics.def()
     }
 }
 

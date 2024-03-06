@@ -37,13 +37,6 @@ static POSTGRES_CONNECTION: OnceCell<DatabaseConnection> = OnceCell::new();
 pub enum State {
     #[default]
     Start,
-    // ReceiveAge {
-    //     full_name: String,
-    // },
-    // ReceiveLocation {
-    //     full_name: String,
-    //     age: u8,
-    // },
     CallbackHandler,
     ReceiveFirstName {
         lang: String
@@ -86,59 +79,6 @@ pub async fn init_redis() -> RedisPool {
         .await
         .expect("Failed to create Redis pool.")
 }
-
-
-pub async fn init_scylla() -> Session{
-   let session = SessionBuilder::new()
-       .known_node(
-           dotenv!("SCYLLA_URI")
-       )
-       .build()
-       .await
-       .expect("Failed to create ScyllaDB session");
-
-    // Keyspace and Table creation
-    session
-        .query(
-            "CREATE KEYSPACE IF NOT EXISTS statistics WITH REPLICATION = \
-            {'class' : 'NetworkTopologyStrategy', 'replication_factor' : 1}",
-            &[],
-        )
-        .await
-        .expect("Failed to create keyspace");
-
-        session
-            .query(
-                "CREATE TABLE IF NOT EXISTS statistics.products (
-                    parent_id int,
-                    item_type tinyint,
-                    quantity int,
-                    profit decimal,
-                    business_id int,
-                    date date,
-                    PRIMARY KEY ((parent_id, business_id, item_type), date)
-                );",
-                &[],
-            )
-            .await
-            .expect("Failed to create table products");
-
-    session
-        .query(
-            "CREATE TABLE IF NOT EXISTS statistics.profits (
-                business_id int,
-                profit decimal,
-                date date,
-                PRIMARY KEY ((date, business_id))
-            );",
-            &[],
-        )
-        .await
-        .expect("Failed to create table products.");
-
-    session
-}
-
 
 pub async fn init_mongo() -> mongodb::Database{
     let client = Client::with_uri_str(

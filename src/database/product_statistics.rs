@@ -11,9 +11,9 @@ pub struct Model {
     pub quantity: i32,
     pub date: Date,
     pub business_id: i32,
-    pub parent_id: i32,
     #[sea_orm(column_type = "Double")]
     pub profit: f64,
+    pub parent_id: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -26,25 +26,11 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Business,
-    #[sea_orm(
-        belongs_to = "super::parent_product::Entity",
-        from = "Column::ParentId",
-        to = "super::parent_product::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    ParentProduct,
 }
 
 impl Related<super::business::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Business.def()
-    }
-}
-
-impl Related<super::parent_product::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ParentProduct.def()
     }
 }
 

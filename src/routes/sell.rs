@@ -287,7 +287,16 @@ pub async fn sell(
                             ..Default::default()
                         };
 
-                        product_stats_instance.save(&database).await.unwrap();
+                        match product_stats_instance.save(&database).await {
+                            Ok(instance) => {
+                                println!("Successfully created instance");
+                                println!("{:?}", instance);
+                            },
+                            Err(error) => {
+                                error!("Unable to create {:?}. Original error was {}", 1, error);
+                                println!("Failed to create instance. Error is {:?}", error)
+                            }
+                        }
                     },
                     Err(e) => {
                         println!("{:?}", e);
