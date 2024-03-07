@@ -13,7 +13,6 @@ pub struct Model {
     pub description: String,
     pub main_image: Option<String>,
     pub images: Vec<String>,
-    pub expiration_in_days: i32,
     pub business_id: Option<i32>,
 }
 

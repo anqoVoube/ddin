@@ -10,7 +10,6 @@ pub struct Model {
     pub title: String,
     pub main_image: Option<String>,
     pub images: Vec<String>,
-    pub expiration_in_days: i32,
     pub business_id: Option<i32>,
     #[sea_orm(column_type = "Text")]
     pub description: String,
