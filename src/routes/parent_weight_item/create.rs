@@ -78,7 +78,7 @@ pub async fn upload(
                         request_body.title = Some(text_data);
                     },
                     Err(err) => {
-                        error!("Error: {:?}", err);
+                        println!("Error: {:?}", err);
                         return internal_server_error();
                     }
                 }
@@ -102,7 +102,7 @@ pub async fn upload(
     match new_parent.save(&database).await{
         Ok(_) => default_created(),
         Err(err) => {
-            error!("Error: {:?}", err);
+            println!("Error: {:?}", err);
             internal_server_error()
         }
     }
