@@ -20,7 +20,7 @@ pub struct Body {
     price: f64,
     orig_price: f64,
     quantity: i32,
-    produced_date: Option<NaiveDate>
+    expiration_date: Option<NaiveDate>
 }
 
 pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<ParentNoCodeProductModel, StatusCode> {
@@ -41,15 +41,11 @@ pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Extension(headers): Extension<CustomHeader>,
-    Json(Body {parent_id, price, orig_price, quantity, produced_date}): Json<Body>
+    Json(Body {parent_id, price, orig_price, quantity, expiration_date}): Json<Body>
 ) -> Response {
-    println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, produced_date);
+    println!("{} {:?} {} {} {:?}", parent_id, quantity, orig_price, price, expiration_date);
     match get_object_by_id(&database, parent_id).await{
         Ok(parent) => {
-            let mut expiration_date = None;
-            if let Some(produced_date) = produced_date{
-                expiration_date = Some(produced_date + chrono::Duration::days(parent.expiration_in_days as i64));
-            }
             println!("{:?}", parent);
             match NoCodeProduct::find()
                 .filter(

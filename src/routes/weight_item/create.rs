@@ -21,7 +21,7 @@ pub struct Body {
     price: f64,
     orig_price: f64,
     kg_weight: f64,
-    produced_date: Option<NaiveDate>
+    expiration_date: Option<NaiveDate>
 }
 
 pub async fn get_object_by_id(database: &DatabaseConnection, id: i32) -> Result<ParentWeightItemModel, StatusCode> {
@@ -42,15 +42,11 @@ pub async fn create(
     Extension(database): Extension<DatabaseConnection>,
     Extension(auth): Extension<Auth>,
     Extension(headers): Extension<CustomHeader>,
-    Json(Body {parent_id, price, orig_price, kg_weight, produced_date}): Json<Body>
+    Json(Body {parent_id, price, orig_price, kg_weight, expiration_date}): Json<Body>
 ) -> Response {
-    println!("{} {:?} {} {} {:?}", parent_id, kg_weight, orig_price, price, produced_date);
+    println!("{} {:?} {} {} {:?}", parent_id, kg_weight, orig_price, price, expiration_date);
     match get_object_by_id(&database, parent_id).await{
         Ok(parent_weight_item) => {
-            let mut expiration_date = None;
-             if let Some(produced_date) = produced_date{
-                expiration_date = Some(produced_date + chrono::Duration::days(parent_weight_item.expiration_in_days as i64));
-            }
             println!("{:?}", parent_weight_item);
             match WeightItem::find()
                 .filter(
