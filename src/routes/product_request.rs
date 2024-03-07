@@ -163,7 +163,7 @@ pub async fn upload_without_photo(
                     info!("{:?}", instance);
                 },
                 Err(error) => {
-                    error!("Unable to create {:?}. Original error was {}", 1, error);
+                    println!("Unable to create {:?}. Original error was {}", 1, error);
                     return internal_server_error();
                 }
             }
