@@ -133,21 +133,21 @@ pub async fn init_bot() -> Bot{
             .branch(callback_query_handler)
     }
 
-    // tokio::spawn(async move {
-    //     Dispatcher::builder(
-    //         bot,
-    //         schema()
-    //     )
-    //         .dependencies(dptree::deps![InMemStorage::<State>::new()])
-    //         .build()
-    //         .dispatch()
-    //         // .dispatch_with_listener(
-    //         //     listener,
-    //         //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
-    //         // )
-    //         .await;
-    //     }
-    // );
+    tokio::spawn(async move {
+        Dispatcher::builder(
+            bot,
+            schema()
+        )
+            .dependencies(dptree::deps![InMemStorage::<State>::new()])
+            .build()
+            .dispatch()
+            // .dispatch_with_listener(
+            //     listener,
+            //     LoggingErrorHandler::with_custom_text("An error from the update listener"),
+            // )
+            .await;
+        }
+    );
     Bot::new(dotenv!("BOT_TOKEN"))
 }
 
