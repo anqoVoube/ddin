@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
-use lettre::email::EmailBuilder;
-use lettre::transport::EmailTransport;
-use lettre::transport::smtp::{SecurityLevel, SmtpTransportBuilder};
+use lettre::{message::header::ContentType, Message, SmtpTransport, Transport};
+use lettre::transport::smtp::authentication::Credentials;
+
 pub mod router;
 pub mod create;
 pub mod verify;
@@ -26,29 +26,29 @@ pub struct VerificationData {
     verification_id: String,
 }
 
+
 fn send_verification_code(code: &str, destination_email: &str) {
-    let smtp_server = "smtp.googlemail.com";
-    let smtp_username = "ddincoshopinnovate@gmail";
-    let smtp_password = "tnzt sywi ywwj hysm";
-    let smtp_port = 587u16;
+    let email = Message::builder()
+        .from("NoBody <nobody@domain.tld>".parse().unwrap())
+        .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
+        .to("Hei <hei@domain.tld>".parse().unwrap())
+        .subject("Happy new year")
+        .header(ContentType::TEXT_PLAIN)
+        .body(String::from("Be happy!"))
+        .unwrap();
 
-    let email = EmailBuilder::new()
-        .to(destination_email)
-        .from(smtp_username)
-        .subject("I am contacting you in respect of a family treasure of Gold deposited in my name")
-        .body("i am Becki Ofori a Ghanian from Ashanti region Kumasi, Ghana.")
-        .build().unwrap();
+    // Open a local connection on port 25
+    let creds = Credentials::new("ddincoshopinnovation".to_string(), "tnzt sywi ywwj hysm".to_string());
 
-    let mut mailer = SmtpTransportBuilder::new((smtp_server, smtp_port)).unwrap()
-        .hello_name("localhost")
-        .credentials(smtp_username, smtp_password)
-        .security_level(SecurityLevel::AlwaysEncrypt)
-        .smtp_utf8(true)
+// Open a remote connection to gmail
+    let mailer = SmtpTransport::relay("smtp.gmail.com")
+        .unwrap()
+        .credentials(creds)
         .build();
 
-    let result = mailer.send(email.clone());
-    match result {
-        Ok(_) => println!("email sent"),
-        Err(err) => println!("failed to send email alert: {}", err)
+    // Send the email
+    match mailer.send(&email) {
+        Ok(_) => println!("Email sent successfully!"),
+        Err(e) => panic!("Could not send email: {e:?}"),
     }
 }

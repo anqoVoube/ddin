@@ -145,7 +145,7 @@ pub async fn login(
                         &verification_id,
                         &*vec![
                             (TYPE, AuthType::Login.to_string()),
-                            (PHONE_NUMBER, phone_number),
+                            (PHONE_NUMBER, phone_number.clone()),
                             (CODE, verification_code.clone())
                         ]).await.unwrap();
                     let _: () = redis_conn.expire(user_id, 120).await.unwrap();
