@@ -136,9 +136,6 @@ pub async fn create(
     Json(Body{ first_name, last_name, phone_number}): Json<Body>,
 ) -> Response {
     println!("{} {} {}", first_name, last_name, phone_number);
-    if !is_valid_phone_number(&phone_number) {
-        return bad_request("Invalid phone number");
-    }
     let mut condition = Condition::all();
     condition = condition.add(user::Column::PhoneNumber.eq(phone_number.clone()));
     match User::find().filter(condition).one(&database).await{
