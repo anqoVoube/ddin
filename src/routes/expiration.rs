@@ -116,6 +116,6 @@ pub async fn get_expirations(
             main_image: parent.main_image.clone(),
         })
     }
-
+    println!("{:?}", all_expired);
     (StatusCode::OK, Json(all_expired)).into_response()
 }

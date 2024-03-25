@@ -15,7 +15,7 @@ use teloxide::requests::Requester;
 use tower_cookies::Cookies;
 use crate::database::prelude::{User, TelegramUser};
 use crate::RedisPool;
-use crate::routes::user::{AuthType, CODE, PHONE_NUMBER, TYPE, VerificationData};
+use crate::routes::user::{AuthType, CODE, PHONE_NUMBER, send_verification_code, TYPE, VerificationData};
 use crate::routes::utils::{check::is_valid_phone_number, generate};
 
 const SESSION_KEY: &str = "session-key";
@@ -150,16 +150,17 @@ pub async fn login(
                         ]).await.unwrap();
                     let _: () = redis_conn.expire(user_id, 120).await.unwrap();
                     let _: () = redis_conn.expire(&verification_id, 130).await.unwrap();
-                    let mut condition = Condition::all();
-                    condition = condition.add(telegram_user::Column::UserId.eq(user.id));
-                    match TelegramUser::find().filter(condition).one(&database).await {
-                        Ok(Some(tg_user)) => {
-                            println!("Trying to send message");
-                            bot.send_message(ChatId(tg_user.telegram_id), verification_code).await.unwrap();
-                        },
-                        Ok(None) => {println!("{}", "NOT ENOUGH!")}
-                        Err(e) => {println!("{}", e)},
-                    };
+                    send_verification_code(&verification_code, &phone_number);
+                    // let mut condition = Condition::all();
+                    // condition = condition.add(telegram_user::Column::UserId.eq(user.id));
+                    // match TelegramUser::find().filter(condition).one(&database).await {
+                    //     Ok(Some(tg_user)) => {
+                    //         println!("Trying to send message");
+                    //         bot.send_message(ChatId(tg_user.telegram_id), verification_code).await.unwrap();
+                    //     },
+                    //     Ok(None) => {println!("{}", "NOT ENOUGH!")}
+                    //     Err(e) => {println!("{}", e)},
+                    // };
                     verification_id
                 }
             };
