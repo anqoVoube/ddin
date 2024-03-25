@@ -29,16 +29,29 @@ pub struct VerificationData {
 
 fn send_verification_code(code: &str, destination_email: &str) {
     let email = Message::builder()
-        .from("NoBody <nobody@domain.tld>".parse().unwrap())
-        .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
-        .to("Hei <hei@domain.tld>".parse().unwrap())
-        .subject("Happy new year")
+        .from("ddincoshopinnovation@gmail.com".parse().unwrap())
+        .to(destination_email.parse().unwrap())
+        .subject("Happy new code")
         .header(ContentType::TEXT_PLAIN)
         .body(String::from("Be happy!"))
         .unwrap();
 
     // Open a local connection on port 25
     let creds = Credentials::new("ddincoshopinnovation".to_string(), "tnzt sywi ywwj hysm".to_string());
+
+// Open a remote connection to gmail
+    let mailer = SmtpTransport::relay("smtp.gmail.com")
+        .unwrap()
+        .credentials(creds)
+        .build();
+
+    // Send the email
+    match mailer.send(&email) {
+        Ok(_) => println!("Email sent successfully!"),
+        Err(e) => panic!("Could not send email: {e:?}"),
+    }
+
+    let creds = Credentials::new("ddincoshopinnovation@gmail.com".to_string(), "tnzt sywi ywwj hysm".to_string());
 
 // Open a remote connection to gmail
     let mailer = SmtpTransport::relay("smtp.gmail.com")
