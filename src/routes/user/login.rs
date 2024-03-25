@@ -125,9 +125,6 @@ pub async fn login(
     Json(Body{ phone_number}): Json<Body>,
 ) -> Response {
     println!("Еперный бабай!");
-    if !is_valid_phone_number(&phone_number) {
-        return bad_request("Invalid phone number");
-    }
     let mut condition = Condition::all();
     condition = condition.add(user::Column::PhoneNumber.eq(&phone_number));
     match User::find().filter(condition).one(&database).await{
