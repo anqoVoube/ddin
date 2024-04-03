@@ -37,7 +37,7 @@ fn send_verification_code(code: &str, destination_email: &str) {
         .from(from_email.parse().unwrap())
         .to(destination_email.parse().unwrap())
         .subject("Verification code")
-        .body(code)
+        .body(code.to_owned())
         .unwrap();
 
     let creds: Credentials = Credentials::new(from_email.to_string(), smtp_key.to_string());
