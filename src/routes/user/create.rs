@@ -155,7 +155,7 @@ pub async fn create(
                     (TYPE, AuthType::Register.to_string()),
                     (FIRST_NAME, first_name),
                     (LAST_NAME, last_name),
-                    (PHONE_NUMBER, phone_number),
+                    (PHONE_NUMBER, phone_number.clone()),
                     (CODE, six_digit_number())
                 ]).await.unwrap();
             let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
