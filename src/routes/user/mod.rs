@@ -28,19 +28,22 @@ pub struct VerificationData {
 
 
 fn send_verification_code(code: &str, destination_email: &str) {
-    let email = Message::builder()
-        .from("ddincoshopinnovation@gmail.com".parse().unwrap())
+    let smtp_key: &str = "SB5A9hVYgzvNJywp";
+    let from_email: &str = "ddincoshopinnovate@gmail.com";
+    let host: &str = "smtp-relay.brevo.com";
+
+
+    let email: Message = Message::builder()
+        .from(from_email.parse().unwrap())
         .to(destination_email.parse().unwrap())
-        .subject("Happy new code")
-        .header(ContentType::TEXT_PLAIN)
-        .body(String::from("Be happy!"))
+        .subject("Verification code")
+        .body(code)
         .unwrap();
 
-    // Open a local connection on port 25
-    let creds = Credentials::new("ddincoshopinnovation".to_string(), "tnzt sywi ywwj hysm".to_string());
+    let creds: Credentials = Credentials::new(from_email.to_string(), smtp_key.to_string());
 
-// Open a remote connection to gmail
-    let mailer = SmtpTransport::relay("smtp.gmail.com")
+    // Open a remote connection to gmail
+    let mailer: SmtpTransport = SmtpTransport::relay(&host)
         .unwrap()
         .credentials(creds)
         .build();
@@ -48,20 +51,6 @@ fn send_verification_code(code: &str, destination_email: &str) {
     // Send the email
     match mailer.send(&email) {
         Ok(_) => println!("Email sent successfully!"),
-        Err(e) => panic!("Could not send email: {e:?}"),
-    }
-
-    let creds = Credentials::new("ddincoshopinnovation@gmail.com".to_string(), "tnzt sywi ywwj hysm".to_string());
-
-// Open a remote connection to gmail
-    let mailer = SmtpTransport::relay("smtp.gmail.com")
-        .unwrap()
-        .credentials(creds)
-        .build();
-
-    // Send the email
-    match mailer.send(&email) {
-        Ok(_) => println!("Email sent successfully!"),
-        Err(e) => panic!("Could not send email: {e:?}"),
+        Err(e) => panic!("Could not send email: {:?}", e),
     }
 }
