@@ -17,7 +17,7 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use crate::RedisPool;
 use crate::routes::AppConnections;
-use crate::routes::user::{AuthType, CODE, FIRST_NAME, LAST_NAME, PHONE_NUMBER, TYPE, VerificationData};
+use crate::routes::user::{AuthType, CODE, FIRST_NAME, LAST_NAME, PHONE_NUMBER, send_verification_code, TYPE, VerificationData};
 use crate::routes::utils::{check::is_valid_phone_number, generate::six_digit_number, hash_helper::generate_uuid4};
 
 
@@ -159,6 +159,7 @@ pub async fn create(
                     (CODE, six_digit_number())
                 ]).await.unwrap();
             let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
+            send_verification_code(&verification_id, &phone_number);
             return (
                 StatusCode::OK,
                 Json(VerificationData{verification_id})
