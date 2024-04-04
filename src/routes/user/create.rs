@@ -19,6 +19,7 @@ use crate::RedisPool;
 use crate::routes::AppConnections;
 use crate::routes::user::{AuthType, CODE, FIRST_NAME, LAST_NAME, PHONE_NUMBER, send_verification_code, TYPE, VerificationData};
 use crate::routes::utils::{check::is_valid_phone_number, generate::six_digit_number, hash_helper::generate_uuid4};
+use crate::routes::utils::generate::five_digit_number;
 
 
 #[derive(Serialize, Debug, Clone, Deserialize)]
@@ -149,6 +150,7 @@ pub async fn create(
         _ => {
             let verification_id = generate_uuid4();
             let mut redis_conn = redis.get().await.expect("Failed to get Redis connection");
+            let verification_code = five_digit_number();
             let _: () = redis_conn.hset_multiple(
                 &verification_id,
                 &*vec![
@@ -156,10 +158,10 @@ pub async fn create(
                     (FIRST_NAME, first_name),
                     (LAST_NAME, last_name),
                     (PHONE_NUMBER, phone_number.clone()),
-                    (CODE, six_digit_number())
+                    (CODE, verification_code.clone())
                 ]).await.unwrap();
             let _: () = redis_conn.expire(&verification_id, 300).await.unwrap();
-            send_verification_code(&verification_id, &phone_number);
+            send_verification_code(&verification_code, &phone_number);
             return (
                 StatusCode::OK,
                 Json(VerificationData{verification_id})
