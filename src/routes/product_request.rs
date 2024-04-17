@@ -15,6 +15,7 @@ use sea_orm::ActiveValue::Set;
 use serde::Deserialize;
 use crate::routes::utils::hash_helper::generate_uuid4;
 use sea_orm::{QueryFilter, ColumnTrait};
+use crate::core::auth::middleware::{Auth, CustomHeader};
 
 static GLOBAL_DATA: Lazy<Mutex<i32>> = Lazy::new(|| {
     let global_count = 0;
@@ -143,6 +144,8 @@ pub struct Instance{
 #[debug_handler]
 pub async fn upload_without_photo(
     Extension(database): Extension<DatabaseConnection>,
+    Extension(Auth {user_id}): Extension<Auth>,
+    Extension(CustomHeader {business_id}): Extension<CustomHeader>,
     Json(RequestBody{products}): Json<RequestBody>
 ) -> Response{
     for product in products{
@@ -155,6 +158,7 @@ pub async fn upload_without_photo(
                 description: Set("hello".to_string()),
                 main_image: Set(None),
                 images: Set(vec!()),
+                business_id: Set(Some(business_id)),
                 ..Default::default()
             };
 
