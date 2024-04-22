@@ -86,7 +86,7 @@ pub async fn fetch_products(
 
     if products.len() == 0{
         println!("0 products find, trying to find parent product {}", code);
-        return match get_object(&database, code, custom_headers.business_id).await {
+        return match get_object(&database, None, code, custom_headers.business_id).await {
             Ok(parent_product) => {
                 let parent_product_schema: ParentProductSchema = parent_product.into();
                 return Ok(
