@@ -57,7 +57,7 @@ pub async fn get_expirations(
     println!("{}", today);
     let condition = Condition::all()
         .add(product::Column::BusinessId.eq(business_id))
-        .add(product::Column::ExpirationDate.eq(today));
+        .add(product::Column::ExpirationDate.lte(today));
     let products = Product::find()
         .find_with_related(ParentProduct)
         .filter(condition)
