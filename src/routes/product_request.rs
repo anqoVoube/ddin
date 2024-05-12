@@ -36,6 +36,8 @@ pub struct ObjectBody{
 #[debug_handler]
 pub async fn upload(
     Extension(database): Extension<DatabaseConnection>,
+    Extension(Auth {user_id}): Extension<Auth>,
+    Extension(CustomHeader {business_id}): Extension<CustomHeader>,
     mut multipart: Multipart
 ) -> Response {
     let mut global_count = GLOBAL_DATA.lock().await;
@@ -110,6 +112,7 @@ pub async fn upload(
             code: Set(object.code.clone().unwrap()),
             description: Set("hello".to_string()),
             main_image: Set(object.main_image.clone()),
+            business_id: Set(Some(business_id)),
             images: Set(vec!()),
             ..Default::default()
         };

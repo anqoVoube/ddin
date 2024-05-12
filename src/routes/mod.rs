@@ -18,6 +18,7 @@ pub mod product_request;
 mod parent_weight_item;
 pub mod debts;
 mod check;
+mod analytics;
 // mod bot;
 
 use std::sync::Arc;
@@ -54,6 +55,7 @@ use crate::routes::debts::router::get_router as debts_router;
 use crate::routes::utils::media::media_path;
 use crate::routes::weight_item::create::create as create_weight_item;
 use crate::routes::sell::sell;
+use crate::routes::analytics::router::get_router as analytics_router;
 
 #[derive(Clone)]
 pub struct AppConnections {
@@ -112,6 +114,7 @@ pub fn v1_routes(connections: AppConnections) -> Router{
         .nest("/parent-product/", parent_product_router())
         .nest("/product/", product_router())
         .nest("/no-code-product", no_code_product_router())
+        .nest("/analytics", analytics_router())
         .nest("/statistics", statistics_router())
         .route_layer(middleware::from_fn_with_state(connections.clone(), validate_business_id))
         .route_layer(middleware::from_fn(business_getter))
