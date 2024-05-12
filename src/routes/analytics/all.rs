@@ -24,6 +24,19 @@ pub struct Sum {
     sum: f32
 }
 
+#[derive(FromQueryResult)]
+pub struct ProductInfo {
+    price: f32,
+    quantity: f32
+}
+
+#[derive(FromQueryResult)]
+pub struct WeightItemInfo {
+    price: f32,
+    kg_weight: f32
+}
+
+
 pub async fn get_all_analytics(
     Extension(auth): Extension<Auth>,
     Extension(headers): Extension<CustomHeader>,
@@ -53,42 +66,50 @@ pub async fn get_all_analytics(
         .await
         .unwrap();
 
-    let total_weight_item_evaluation: Option<Sum> = WeightItem::find()
+    let weight_items: Vec<WeightItemInfo> = WeightItem::find()
         .filter(
             weight_item_condition
         )
         .select_only()
-        .column_as(weight_item::Column::Price.sum(), "sum")
-        .into_model::<Sum>()
-        .one(&database)
+        .column_as(weight_item::Column::Price.sum(), "price")
+        .column_as(weight_item::Column::KgWeight.sum(), "kg_weight")
+        .into_model::<WeightItemInfo>()
+        .all(&database)
         .await
         .unwrap();
 
-    let total_no_code_product_evaluation: Option<Sum> = NoCodeProduct::find()
+    let no_code_products: Vec<ProductInfo> = NoCodeProduct::find()
         .filter(
             no_code_product_condition
         )
         .select_only()
-        .column_as(no_code_product::Column::Price.sum(), "sum")
-        .into_model::<Sum>()
-        .one(&database)
+        .column_as(no_code_product::Column::Price.sum(), "price")
+        .column_as(no_code_product::Column::Quantity.sum(), "quantity")
+        .into_model::<ProductInfo>()
+        .all(&database)
         .await
         .unwrap();
 
-    let total_product_evaluation: Option<Sum> = Product::find()
+    let products: Vec<ProductInfo> = Product::find()
         .filter(
             product_condition
         )
         .select_only()
-        .column_as(product::Column::Price.sum(), "sum")
-        .into_model::<Sum>()
-        .one(&database)
+        .column_as(product::Column::Price.sum(), "price")
+        .column_as(product::Column::Quantity.sum(), "quantity")
+        .into_model::<ProductInfo>()
+        .all(&database)
         .await
         .unwrap();
 
+
+    let total_weight_item_evaluation = weight_items.iter().fold(0.0, |acc, item| acc + item.price * item.kg_weight);
+    let total_no_code_product_evaluation = no_code_products.iter().fold(0.0, |acc, item| acc + item.price * item.quantity);
+    let total_product_evaluation = products.iter().fold(0.0, |acc, item| acc + item.price * item.quantity);
+
     let json_response = Analytics{
         total_debts: total_amount.unwrap_or(Sum {sum: 0f32}).sum,
-        evaluation: total_weight_item_evaluation.unwrap_or(Sum {sum: 0f32}).sum + total_no_code_product_evaluation.unwrap_or(Sum {sum: 0f32}).sum + total_product_evaluation.unwrap_or(Sum {sum: 0f32}).sum
+        evaluation: total_weight_item_evaluation + total_no_code_product_evaluation + total_product_evaluation
     };
 
     (
