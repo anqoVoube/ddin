@@ -157,6 +157,19 @@ pub async fn sell(
                     }
                 } else {
                     pear.quantity = Set(total - product_instance.quantity);
+                    match ProductSearch::find().filter(product_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                        Ok(Some(pear_search)) => {
+                            let mut pear_search: product_search::ActiveModel = pear_search.into();
+                            pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                        },
+                        Ok(None) => {
+                            return not_found();
+                        },
+                        Err(err) => {
+                            println!("{:?}", err);
+                            return internal_server_error();
+                        }
+                    }
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
@@ -256,7 +269,19 @@ pub async fn sell(
                     }
                 } else {
                     pear.kg_weight = Set(total - weight_item_instance.kg_weight);
-
+                    match WeightItemSearch::find().filter(weight_item_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                        Ok(Some(pear_search)) => {
+                            let mut pear_search: weight_item_search::ActiveModel = pear_search.into();
+                            pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                        },
+                        Ok(None) => {
+                            return not_found();
+                        },
+                        Err(err) => {
+                            println!("{:?}", err);
+                            return internal_server_error();
+                        }
+                    }
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
@@ -365,6 +390,20 @@ pub async fn sell(
                     }
                 } else {
                     pear.quantity = Set(total - no_code_product_instance.quantity);
+
+                    match NoCodeProductSearch::find().filter(no_code_product_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                        Ok(Some(pear_search)) => {
+                            let mut pear_search: no_code_product_search::ActiveModel = pear_search.into();
+                            pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                        },
+                        Ok(None) => {
+                            return not_found();
+                        },
+                        Err(err) => {
+                            println!("{:?}", err);
+                            return internal_server_error();
+                        }
+                    }
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
