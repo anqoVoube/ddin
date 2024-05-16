@@ -27,6 +27,8 @@ pub enum Relation {
     Business,
     #[sea_orm(has_many = "super::no_code_product::Entity")]
     NoCodeProduct,
+    #[sea_orm(has_many = "super::no_code_product_search::Entity")]
+    NoCodeProductSearch,
 }
 
 impl Related<super::business::Entity> for Entity {
@@ -38,6 +40,12 @@ impl Related<super::business::Entity> for Entity {
 impl Related<super::no_code_product::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::NoCodeProduct.def()
+    }
+}
+
+impl Related<super::no_code_product_search::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::NoCodeProductSearch.def()
     }
 }
 

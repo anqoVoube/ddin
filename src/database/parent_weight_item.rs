@@ -28,6 +28,8 @@ pub enum Relation {
     Business,
     #[sea_orm(has_many = "super::weight_item::Entity")]
     WeightItem,
+    #[sea_orm(has_many = "super::weight_item_search::Entity")]
+    WeightItemSearch,
 }
 
 impl Related<super::business::Entity> for Entity {
@@ -39,6 +41,12 @@ impl Related<super::business::Entity> for Entity {
 impl Related<super::weight_item::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::WeightItem.def()
+    }
+}
+
+impl Related<super::weight_item_search::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::WeightItemSearch.def()
     }
 }
 

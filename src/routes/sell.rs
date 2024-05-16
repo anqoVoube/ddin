@@ -14,9 +14,9 @@ use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::{DateTimeUtc, DateTimeWithTimeZone};
 use serde_json::json;
 use crate::core::auth::middleware::{Auth, CustomHeader};
-use crate::database::prelude::{NoCodeProduct, ProductStatistics, Rent, WeightItem};
+use crate::database::prelude::{NoCodeProduct, NoCodeProductSearch, ProductStatistics, Rent, WeightItem, WeightItemSearch};
 use crate::database::product::Entity as Product;
-use crate::database::{no_code_product, product, product_statistics, profit_statistics, rent, rent_history, weight_item};
+use crate::database::{no_code_product, no_code_product_search, product, product_statistics, profit_statistics, rent, rent_history, weight_item, weight_item_search};
 use crate::database::prelude::ProfitStatistics;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 use sea_orm::QueryFilter;
@@ -157,19 +157,19 @@ pub async fn sell(
                     }
                 } else {
                     pear.quantity = Set(total - product_instance.quantity);
-                    match ProductSearch::find().filter(product_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
-                        Ok(Some(pear_search)) => {
-                            let mut pear_search: product_search::ActiveModel = pear_search.into();
-                            pear_search.hits = Set(pear_search.hits.unwrap() + 1);
-                        },
-                        Ok(None) => {
-                            return not_found();
-                        },
-                        Err(err) => {
-                            println!("{:?}", err);
-                            return internal_server_error();
-                        }
-                    }
+                    // match ProductSearch::find().filter(product_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                    //     Ok(Some(pear_search)) => {
+                    //         let mut pear_search: product_search::ActiveModel = pear_search.into();
+                    //         pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                    //     },
+                    //     Ok(None) => {
+                    //         return not_found();
+                    //     },
+                    //     Err(err) => {
+                    //         println!("{:?}", err);
+                    //         return internal_server_error();
+                    //     }
+                    // }
                     if let Err(err) = pear.update(&database).await {
                         println!("{:?}", err);
                         return internal_server_error();
@@ -269,7 +269,7 @@ pub async fn sell(
                     }
                 } else {
                     pear.kg_weight = Set(total - weight_item_instance.kg_weight);
-                    match WeightItemSearch::find().filter(weight_item_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                    match WeightItemSearch::find().filter(weight_item_search::Column::ParentId.eq(pear.parent_id.clone().unwrap())).one(&database).await{
                         Ok(Some(pear_search)) => {
                             let mut pear_search: weight_item_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
@@ -391,7 +391,7 @@ pub async fn sell(
                 } else {
                     pear.quantity = Set(total - no_code_product_instance.quantity);
 
-                    match NoCodeProductSearch::find().filter(no_code_product_search::Column::ParentId.eq(pear.parent_id)).one(&database).await{
+                    match NoCodeProductSearch::find().filter(no_code_product_search::Column::ParentId.eq(pear.parent_id.clone().unwrap())).one(&database).await{
                         Ok(Some(pear_search)) => {
                             let mut pear_search: no_code_product_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
