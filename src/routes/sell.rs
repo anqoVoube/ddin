@@ -16,11 +16,13 @@ use serde_json::json;
 use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{NoCodeProduct, NoCodeProductSearch, ProductStatistics, Rent, WeightItem, WeightItemSearch};
 use crate::database::product::Entity as Product;
-use crate::database::{no_code_product, no_code_product_search, product, product_statistics, profit_statistics, rent, rent_history, weight_item, weight_item_search};
+use crate::database::{no_code_product, no_code_product_search, product, product_statistics, profit_statistics, rent, rent_history, telegram_user, user, weight_item, weight_item_search};
 use crate::database::prelude::ProfitStatistics;
 use crate::routes::utils::{not_found, bad_request, internal_server_error, default_created, default_ok};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
+use crate::POSTGRES_CONNECTION;
+
 fn default_as_false() -> bool {
     false
 }
@@ -275,7 +277,21 @@ pub async fn sell(
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
                         },
                         Ok(None) => {
-                            return not_found();
+                            let creating = weight_item_search::ActiveModel{
+                                parent_id: Set(pear.parent_id.clone().unwrap()),
+                                hits: Set(1),
+                                ..Default::default()
+                            };
+
+                            match creating.save(&database).await{
+                                Ok(created_user) => {
+                                    println!("{:?}", created_user);
+                                },
+                                Err(e) => {
+                                    println!("{}", e);
+                                    return internal_server_error();
+                                }
+                            }
                         },
                         Err(err) => {
                             println!("{:?}", err);
@@ -397,7 +413,21 @@ pub async fn sell(
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
                         },
                         Ok(None) => {
-                            return not_found();
+                            let creating = no_code_product_search::ActiveModel{
+                                parent_id: Set(pear.parent_id.clone().unwrap()),
+                                hits: Set(1),
+                                ..Default::default()
+                            };
+
+                            match creating.save(&database).await{
+                                Ok(created_user) => {
+                                    println!("{:?}", created_user);
+                                },
+                                Err(e) => {
+                                    println!("{}", e);
+                                    return internal_server_error();
+                                }
+                            }
                         },
                         Err(err) => {
                             println!("{:?}", err);
