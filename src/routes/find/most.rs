@@ -77,7 +77,7 @@ pub async fn most_searched(
                         });
                     },
                     _ => {
-                        panic!()
+                        println!("xz")
                     }
                 }
 
@@ -115,7 +115,7 @@ pub async fn most_searched(
                         });
                     },
                     _ => {
-                        panic!()
+                        println!("xz")
                     }
                 }
 
