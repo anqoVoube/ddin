@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::database::{no_code_product, no_code_product_search, parent_no_code_product, parent_weight_item, weight_item, weight_item_search};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
+use sea_orm::sea_query::JoinOn::Condition;
 
 const DEFAULT_PAGE_SIZE: i32 = 10;
 const DEFAULT_PAGE: i32 = 1;
@@ -27,7 +28,8 @@ pub struct PopularProductSearch {
     title: String,
     main_image: Option<String>,
     max_quantity: i32,
-    hits: i32
+    hits: i32,
+    price: f64
 }
 
 #[derive(Deserialize, Serialize)]
@@ -36,7 +38,8 @@ pub struct WeightItemSearchResult {
     title: String,
     main_image: Option<String>,
     max_kg_weight: f64,
-    hits: i32
+    hits: i32,
+    price: f64,
 }
 
 
@@ -59,14 +62,18 @@ pub async fn most_searched(
             let mut result = vec![];
             for (weight_item_search, vec_weight_item) in weight_item_search {
                 let parent_weight_item = vec_weight_item.first().unwrap();
-                match WeightItem::find().filter(weight_item::Column::ParentId.eq(parent_weight_item.id)).one(&database).await{
+                let condition = Condition::all()
+                    .add(weight_item::Column::ParentId.eq(parent_weight_item.id))
+                    .add(weight_item::Column::BusinessId.eq(headers.business_id));
+                match WeightItem::find().filter(condition).one(&database).await{
                     Ok(Some(weight_item_instance)) => {
                         result.push(WeightItemSearchResult{
                             id: weight_item_instance.id,
                             title: parent_weight_item.title.clone(),
                             main_image: parent_weight_item.main_image.clone(),
                             max_kg_weight: weight_item_instance.kg_weight,
-                            hits: weight_item_search.hits
+                            hits: weight_item_search.hits,
+                            price: weight_item_instance.price
                         });
                     },
                     _ => {
@@ -93,14 +100,18 @@ pub async fn most_searched(
             let mut result = vec![];
             for (no_code_product_search, vec_no_code_product) in no_code_product_search{
                 let parent_no_code_product = vec_no_code_product.first().unwrap();
-                match NoCodeProduct::find().filter(no_code_product::Column::ParentId.eq(parent_no_code_product.id)).one(&database).await {
+                let condition = Condition::all()
+                    .add(no_code_product::Column::ParentId.eq(parent_no_code_product.id))
+                    .add(no_code_product::Column::BusinessId.eq(headers.business_id));
+                match NoCodeProduct::find().filter(condition).one(&database).await {
                     Ok(Some(no_code_product_instance)) => {
                         result.push(PopularProductSearch {
                             id: no_code_product_instance.id,
                             title: parent_no_code_product.title.clone(),
                             main_image: parent_no_code_product.main_image.clone(),
                             max_quantity: no_code_product_instance.quantity,
-                            hits: no_code_product_search.hits
+                            hits: no_code_product_search.hits,
+                            price: no_code_product_instance.price
                         });
                     },
                     _ => {

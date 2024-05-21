@@ -271,7 +271,10 @@ pub async fn sell(
                     }
                 } else {
                     pear.kg_weight = Set(total - weight_item_instance.kg_weight);
-                    match WeightItemSearch::find().filter(weight_item_search::Column::ParentId.eq(pear.parent_id.clone().unwrap())).one(&database).await{
+                    let condition = Condition::all()
+                        .add(weight_item_search::Column::ParentId.eq(pear.parent_id.clone().unwrap()))
+                        .add(weight_item_search::Column::BusinessId.eq(business_id));
+                    match WeightItemSearch::find().filter(condition).one(&database).await{
                         Ok(Some(pear_search)) => {
                             let mut pear_search: weight_item_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
@@ -279,6 +282,7 @@ pub async fn sell(
                         Ok(None) => {
                             let creating = weight_item_search::ActiveModel{
                                 parent_id: Set(pear.parent_id.clone().unwrap()),
+                                business_id: Set(business_id),
                                 hits: Set(1),
                                 ..Default::default()
                             };
@@ -406,8 +410,12 @@ pub async fn sell(
                     }
                 } else {
                     pear.quantity = Set(total - no_code_product_instance.quantity);
-
-                    match NoCodeProductSearch::find().filter(no_code_product_search::Column::ParentId.eq(pear.parent_id.clone().unwrap())).one(&database).await{
+                    let condition = Condition::all()
+                        .add(no_code_product_search::Column::ParentId.eq(pear.parent_id.clone().unwrap()))
+                        .add(no_code_product_search::Column::BusinessId.eq(business_id));
+                    match NoCodeProductSearch::find().filter(
+                        condition
+                    ).one(&database).await{
                         Ok(Some(pear_search)) => {
                             let mut pear_search: no_code_product_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
@@ -415,6 +423,7 @@ pub async fn sell(
                         Ok(None) => {
                             let creating = no_code_product_search::ActiveModel{
                                 parent_id: Set(pear.parent_id.clone().unwrap()),
+                                business_id: Set(business_id),
                                 hits: Set(1),
                                 ..Default::default()
                             };
