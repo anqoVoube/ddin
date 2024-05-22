@@ -93,8 +93,8 @@ pub async fn most_searched(
             let no_code_product_search: Vec<(no_code_product_search::Model, Vec<parent_no_code_product::Model>)> = NoCodeProductSearch::find()
                 .find_with_related(ParentNoCodeProduct)
                 .order_by_desc(no_code_product_search::Column::Hits)
-                .offset(((page.unwrap_or(DEFAULT_PAGE) - 1) * page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
-                .limit(page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
+                // .offset(((page.unwrap_or(DEFAULT_PAGE) - 1) * page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
+                // .limit(page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
 
                 .all(&database)
                 .await.unwrap();
