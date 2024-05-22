@@ -54,8 +54,8 @@ pub async fn most_searched(
             let weight_item_search: Vec<(weight_item_search::Model, Vec<parent_weight_item::Model>)> = WeightItemSearch::find()
                 .find_with_related(ParentWeightItem)
                 .order_by_desc(weight_item_search::Column::Hits)
-                .offset(((page.unwrap_or(DEFAULT_PAGE) - 1) * page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
-                .limit(page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
+                // .offset(((page.unwrap_or(DEFAULT_PAGE) - 1) * page_size.unwrap_or(DEFAULT_PAGE_SIZE)) as u64)
+                // .limit(page_size.unwrap_or(DEFAULT_PAGE_SIZE) as u64)
 
                 .all(&database)
                 .await.unwrap();
