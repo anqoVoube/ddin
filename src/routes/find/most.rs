@@ -59,6 +59,7 @@ pub async fn most_searched(
 
                 .all(&database)
                 .await.unwrap();
+            println!("{:?}", weight_item_search);
             let mut result = vec![];
             for (weight_item_search, vec_weight_item) in weight_item_search {
                 let parent_weight_item = vec_weight_item.first().unwrap();
