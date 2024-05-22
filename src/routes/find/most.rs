@@ -22,7 +22,7 @@ pub struct Search {
     item_type: u8
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PopularProductSearch {
     id: i32,
     title: String,
@@ -32,7 +32,7 @@ pub struct PopularProductSearch {
     price: f64
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct WeightItemSearchResult {
     id: i32,
     title: String,
@@ -82,6 +82,7 @@ pub async fn most_searched(
                 }
 
             }
+            println!("{:?}", result);
             (
                 StatusCode::OK,
                 Json(result)
@@ -121,6 +122,7 @@ pub async fn most_searched(
 
 
             }
+            println!("{:?}", result);
             (
                 StatusCode::OK,
                 Json(result)
