@@ -108,6 +108,15 @@ pub async fn upload(
     println!("{:?}", objects);
     for object in objects.values(){
         println!("creating");
+        let max_id: Option<i32> = ParentProduct::find()
+            .select_only()
+            .column_as(parent_product::Column::Id.max(), "max_id")
+            .into_tuple::<(i32,)>()
+            .one(&database)
+            .await
+            .expect("Failed to execute query")
+            .map(|tuple| tuple.0);
+
         let new_parent_product = parent_product::ActiveModel {
             title: Set(object.title.clone().unwrap()),
             code: Set(object.code.clone().unwrap()),
@@ -115,7 +124,7 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
-            id: Set(get_max_id(&database) + 1),
+            id: Set(max_id.unwrap() + 1),
             ..Default::default()
         };
 
@@ -134,17 +143,6 @@ pub async fn upload(
     default_ok()
 }
 
-pub async fn get_max_id(database: &DatabaseConnection) -> i32{
-    let max_id: Option<i32> = ParentProduct::find()
-        .select_only()
-        .column_as(parent_product::Column::Id.max(), "max_id")
-        .into_tuple::<(i32,)>()
-        .one(&database)
-        .await
-        .expect("Failed to execute query")
-        .map(|tuple| tuple.0);
-    return max_id.unwrap();
-}
 #[derive(Deserialize)]
 pub struct RequestBody{
     products: Vec<Instance>
