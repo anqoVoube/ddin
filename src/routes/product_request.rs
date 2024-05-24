@@ -117,6 +117,8 @@ pub async fn upload(
             .expect("Failed to execute query")
             .map(|tuple| tuple.0);
 
+        println!("MAX_ID: {:?}", max_id);
+
         let new_parent_product = parent_product::ActiveModel {
             title: Set(object.title.clone().unwrap()),
             code: Set(object.code.clone().unwrap()),
@@ -125,7 +127,6 @@ pub async fn upload(
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
             id: Set(max_id.unwrap() + 1),
-            ..Default::default()
         };
 
         match new_parent_product.save(&database).await{
