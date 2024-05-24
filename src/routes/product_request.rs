@@ -7,7 +7,8 @@ use std::{collections::HashMap, str, fs::File, io::Write, path::Path, fs};
 use axum::response::Response;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
+use rand::Rng;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect};
 use tokio::sync::Mutex;
 use crate::database::parent_product;
 use crate::routes::utils::{default_ok, internal_server_error};
@@ -114,6 +115,7 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
+            id: Set(get_max_id(&database) + 1),
             ..Default::default()
         };
 
@@ -132,7 +134,17 @@ pub async fn upload(
     default_ok()
 }
 
-
+pub async fn get_max_id(database: &DatabaseConnection) -> i32{
+    let max_id: Option<i32> = ParentProduct::find()
+        .select_only()
+        .column_as(parent_product::Column::Id.max(), "max_id")
+        .into_tuple::<(i32,)>()
+        .one(&database)
+        .await
+        .expect("Failed to execute query")
+        .map(|tuple| tuple.0);
+    return max_id.unwrap();
+}
 #[derive(Deserialize)]
 pub struct RequestBody{
     products: Vec<Instance>
