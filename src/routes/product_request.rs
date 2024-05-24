@@ -8,7 +8,7 @@ use axum::response::Response;
 use log::{error, info};
 use once_cell::sync::Lazy;
 use rand::Rng;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, QuerySelect};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait};
 use tokio::sync::Mutex;
 use crate::database::parent_product;
 use crate::routes::utils::{default_ok, internal_server_error};
@@ -108,17 +108,6 @@ pub async fn upload(
     println!("{:?}", objects);
     for object in objects.values(){
         println!("creating");
-        let max_id: Option<i32> = ParentProduct::find()
-            .select_only()
-            .column_as(parent_product::Column::Id.max(), "max_id")
-            .into_tuple::<(i32,)>()
-            .one(&database)
-            .await
-            .expect("Failed to execute query")
-            .map(|tuple| tuple.0);
-
-        println!("MAX_ID: {:?}", max_id);
-
         let new_parent_product = parent_product::ActiveModel {
             title: Set(object.title.clone().unwrap()),
             code: Set(object.code.clone().unwrap()),
@@ -126,7 +115,8 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
-            id: Set(generate_nine_digit_number() as i32),
+            id: Set(generate_nine_digit_number),
+            ..Default::default()
         };
 
         match new_parent_product.save(&database).await{
@@ -142,12 +132,6 @@ pub async fn upload(
     }
 
     default_ok()
-}
-
-pub fn generate_nine_digit_number() -> u32{
-    let mut rng = rand::thread_rng();
-    let number: u32 = rng.gen_range(100_000_000..999_999_999);
-    return number;
 }
 
 
