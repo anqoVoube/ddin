@@ -123,6 +123,7 @@ pub async fn upload(
             },
             Err(error) => {
                 error!("Unable to create {:?}. Original error was {}", 1, error);
+                println!("Error!: {:?}", error);
                 return internal_server_error();
             }
         }
