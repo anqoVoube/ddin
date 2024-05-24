@@ -115,7 +115,6 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
-            id: Set(generate_nine_digit_number),
             ..Default::default()
         };
 
