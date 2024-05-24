@@ -126,7 +126,7 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
-            id: Set(max_id.unwrap() + 1),
+            id: Set(generate_nine_digit_number() as i32),
         };
 
         match new_parent_product.save(&database).await{
@@ -143,6 +143,13 @@ pub async fn upload(
 
     default_ok()
 }
+
+pub fn generate_nine_digit_number() -> u32{
+    let mut rng = rand::thread_rng();
+    let number: u32 = rng.gen_range(100_000_000..999_999_999);
+    return number;
+}
+
 
 #[derive(Deserialize)]
 pub struct RequestBody{
