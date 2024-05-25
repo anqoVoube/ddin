@@ -115,6 +115,7 @@ pub async fn upload(
             main_image: Set(object.main_image.clone()),
             business_id: Set(Some(business_id)),
             images: Set(vec!()),
+            is_verified: Set(false),
             ..Default::default()
         };
 
@@ -164,6 +165,7 @@ pub async fn upload_without_photo(
                 main_image: Set(None),
                 images: Set(vec!()),
                 business_id: Set(Some(business_id)),
+                is_verified: Set(false),
                 ..Default::default()
             };
 

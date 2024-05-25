@@ -7,7 +7,6 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    #[sea_orm(unique)]
     pub code: String,
     pub title: String,
     #[sea_orm(column_type = "Text")]
@@ -15,6 +14,7 @@ pub struct Model {
     pub main_image: Option<String>,
     pub images: Vec<String>,
     pub business_id: Option<i32>,
+    pub is_verified: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
