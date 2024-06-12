@@ -1,8 +1,9 @@
 use axum::{debug_handler, Extension, Json};
+use axum::extract::Query;
 use serde::{Serialize, Deserialize};
-use sea_orm::{Condition, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
+use sea_orm::{Condition, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
 use axum::response::{IntoResponse, Response};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use http::StatusCode;
 
 use crate::core::auth::middleware::{Auth, CustomHeader};
@@ -22,6 +23,7 @@ pub struct ExpiredProducts{
     title: String,
     quantity: i32,
     main_image: Option<String>,
+    expires_after: i64
 }
 
 #[derive(Serialize, Debug)]
@@ -30,6 +32,7 @@ pub struct ExpiredWeightItems{
     title: String,
     kg_weight: f64,
     main_image: Option<String>,
+    expires_after: i64
 }
 
 #[derive(Serialize, Debug)]
@@ -38,14 +41,20 @@ pub struct ExpiredNoCodeProducts{
     title: String,
     quantity: i32,
     main_image: Option<String>,
+    expires_after: i64
 }
 
+#[derive(Deserialize, Debug)]
+pub struct QueryParams{
+    days: u32
+}
 
 #[debug_handler]
 pub async fn get_expirations(
     Extension(Auth{user_id}): Extension<Auth>,
     Extension(CustomHeader{business_id}): Extension<CustomHeader>,
     Extension(database): Extension<DatabaseConnection>,
+    Query(QueryParams { days }): Query<QueryParams>
 ) -> Response{
     let mut all_expired = AllExpired{
         products: vec!(),
@@ -57,10 +66,11 @@ pub async fn get_expirations(
     println!("{}", today);
     let condition = Condition::all()
         .add(product::Column::BusinessId.eq(business_id))
-        .add(product::Column::ExpirationDate.lte(today));
+        .add(product::Column::ExpirationDate.lte(today + Duration::days(days as i64)));
     let products = Product::find()
         .find_with_related(ParentProduct)
         .filter(condition)
+        .order_by_asc(product::Column::ExpirationDate)
         .all(&database)
         .await
         .unwrap();
@@ -72,6 +82,7 @@ pub async fn get_expirations(
             title: parent.title.clone(),
             quantity: product.quantity,
             main_image: parent.main_image.clone(),
+            expires_after: (today - product.expiration_date.unwrap()).num_days()
         })
     }
 
@@ -79,9 +90,11 @@ pub async fn get_expirations(
     let condition = Condition::all()
         .add(weight_item::Column::BusinessId.eq(business_id))
         .add(weight_item::Column::ExpirationDate.eq(today));
+
     let weight_items = WeightItem::find()
         .find_with_related(ParentWeightItem)
         .filter(condition)
+        .order_by_asc(weight_item::Column::ExpirationDate)
         .all(&database)
         .await
         .unwrap();
@@ -92,7 +105,8 @@ pub async fn get_expirations(
             id: weight_item.id,
             title: parent.title.clone(),
             kg_weight: weight_item.kg_weight,
-            main_image: parent.main_image.clone()
+            main_image: parent.main_image.clone(),
+            expires_after: (today - weight_item.expiration_date.unwrap()).num_days()
         })
     }
 
@@ -103,6 +117,7 @@ pub async fn get_expirations(
     let no_code_products = NoCodeProduct::find()
         .find_with_related(ParentNoCodeProduct)
         .filter(condition)
+        .order_by_asc(no_code_product::Column::ExpirationDate)
         .all(&database)
         .await
         .unwrap();
@@ -114,6 +129,7 @@ pub async fn get_expirations(
             title: parent.title.clone(),
             quantity: no_code_product.quantity,
             main_image: parent.main_image.clone(),
+            expires_after: (today - no_code_product.expiration_date.unwrap()).num_days()
         })
     }
     println!("{:?}", all_expired);

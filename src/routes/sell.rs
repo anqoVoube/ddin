@@ -278,6 +278,10 @@ pub async fn sell(
                         Ok(Some(pear_search)) => {
                             let mut pear_search: weight_item_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                            if let Err(err) = pear_search.update(&database).await {
+                                println!("{:?}", err);
+                                return internal_server_error();
+                            }
                         },
                         Ok(None) => {
                             let creating = weight_item_search::ActiveModel{
@@ -419,6 +423,10 @@ pub async fn sell(
                         Ok(Some(pear_search)) => {
                             let mut pear_search: no_code_product_search::ActiveModel = pear_search.into();
                             pear_search.hits = Set(pear_search.hits.unwrap() + 1);
+                            if let Err(err) = pear_search.update(&database).await {
+                                println!("{:?}", err);
+                                return internal_server_error();
+                            }
                         },
                         Ok(None) => {
                             let creating = no_code_product_search::ActiveModel{

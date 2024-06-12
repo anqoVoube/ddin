@@ -28,9 +28,9 @@ pub struct VerificationData {
 
 
 fn send_verification_code(code: &str, destination_email: &str) {
-    let smtp_key: &str = "SB5A9hVYgzvNJywp";
+    let smtp_key: &str = "JOzW8qX13upjdt9MhNvY7rfsQAKX";
     let from_email: &str = "ddincoshopinnovate@gmail.com";
-    let host: &str = "smtp-relay.brevo.com";
+    let host: &str = "smtp.tickpluswise.com";
 
 
     let email: Message = Message::builder()
@@ -40,7 +40,7 @@ fn send_verification_code(code: &str, destination_email: &str) {
         .body(code.to_owned())
         .unwrap();
 
-    let creds: Credentials = Credentials::new(from_email.to_string(), smtp_key.to_string());
+    let creds: Credentials = Credentials::new("user-302e43feb4758326".to_string(), smtp_key.to_string());
 
     // Open a remote connection to gmail
     let mailer: SmtpTransport = SmtpTransport::relay(&host)
