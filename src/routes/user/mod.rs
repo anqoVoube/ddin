@@ -28,29 +28,31 @@ pub struct VerificationData {
 
 
 fn send_verification_code(code: &str, destination_email: &str) {
-    let smtp_key: &str = "JOzW8qX13upjdt9MhNvY7rfsQAKX";
-    let from_email: &str = "ddincoshopinnovate@gmail.com";
-    let host: &str = "smtp.tickpluswise.com";
-
-
-    let email: Message = Message::builder()
-        .from(from_email.parse().unwrap())
+    let email = Message::builder()
+        // Set the sender's name and email address
+        .from("ddincoshopinnovate@gmail.com".parse().unwrap())
+        // Set the recipient's name and email address
         .to(destination_email.parse().unwrap())
-        .subject("Verification code")
-        .body(code.to_owned())
+        // Set the subject of the email
+        .subject("Verification Email")
+        // Set the body content of the email
+        .body(String::from(code))
         .unwrap();
 
-    let creds: Credentials = Credentials::new("user-302e43feb4758326".to_string(), smtp_key.to_string());
+    // Create SMTP client credentials using username and password
+    let creds = Credentials::new("ddincoshopinnovate".to_string(), "uarjsgyzccntwole".to_string());
 
-    // Open a remote connection to gmail
-    let mailer: SmtpTransport = SmtpTransport::relay(&host)
-        .unwrap()
-        .credentials(creds)
-        .build();
+    // Open a secure connection to the SMTP server using STARTTLS
+    let mailer = SmtpTransport::starttls_relay("smtp.gmail.com")
+        .unwrap()  // Unwrap the Result, panics in case of error
+        .credentials(creds)  // Provide the credentials to the transport
+        .build();  // Construct the transport
 
-    // Send the email
+    // Attempt to send the email via the SMTP transport
     match mailer.send(&email) {
+        // If email was sent successfully, print confirmation message
         Ok(_) => println!("Email sent successfully!"),
-        Err(e) => panic!("Could not send email: {:?}", e),
+        // If there was an error sending the email, print the error
+        Err(e) => eprintln!("Could not send email: {:?}", e),
     }
 }
