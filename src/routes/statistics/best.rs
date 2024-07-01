@@ -47,8 +47,8 @@ impl NaiveDateExt for chrono::NaiveDate {
 
 #[derive(Serialize)]
 pub struct StatisticsResponse{
-    best_quantity: BestQuantity,
-    best_profit: BestProfit,
+    best_max_quantity: Vec<MaxQuantity>,
+    best_max_profit: Vec<MaxProfit>,
     prices: Vec<f64>,
     namings: Vec<String>
 }
@@ -76,13 +76,41 @@ struct PartialProfitStats {
     pub profit: f64,
 }
 
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone)]
+struct MaxQuantity{
+    item_type: i16,
+    parent_id: i32,
+    quantity: i64
+}
+
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone)]
+struct MaxProfit{
+    item_type: i16,
+    parent_id: i32,
+    profit: i64
+}
+
+// fn main(){
+//     let a = HelloWorld{
+//         number: 1,
+//         title: "Hello".to_owned()
+//     };
+//     let b = HelloWorld{
+//         number: 2,
+//         title: "Bye".to_owned()
+//     };
+//
+//
+//     println!("{:?}", c);
+// }
+
 
 #[debug_handler]
 pub async fn full(
     Extension(database): Extension<DatabaseConnection>,
     Extension(Auth {user_id}): Extension<Auth>,
     Extension(CustomHeader {business_id}): Extension<CustomHeader>,
-    Query(Search {r#type, prev}): Query<Search>
+    Query(Search {r#type, prev, quantity }): Query<Search>
 ) -> Response{
     let mut has_access = true;
     if let Ok(Some(business)) = Business::find_by_id(business_id).one(&database).await{
@@ -113,18 +141,18 @@ pub async fn full(
         .await
         .unwrap();
 
-    let mut max_quantity_parent_id = 0;
-    let mut max_quantity = 0;
-    let mut max_quantity_item_type = 1;
-    println!("{:?}", products);
-    println!("{}", products.len());
+    let mut best_max_quantity = vec![];
     for product in products{
-        if product.quantity_sum > max_quantity{
-            max_quantity_parent_id = product.parent_id;
-            max_quantity = product.quantity_sum;
-            max_quantity_item_type = product.item_type;
-        }
+        best_max_quantity.push(MaxQuantity {
+            item_type: product.item_type,
+            parent_id: product.parent_id,
+            quantity: product.quantity_sum,
+        })
     }
+
+    best_max_quantity.sort_by(|a, b| b.quantity.cmp(&a.quantity));
+
+
 
 
     // convert the below query to rust sea-orm
@@ -147,19 +175,19 @@ pub async fn full(
         .await
         .unwrap();
 
-    let mut max_profit_parent_id = 0;
-    let mut max_profit = 0f64;
-    let mut max_profit_item_type = 1;
+    let mut best_max_profit = vec![];
     let mut profit_by_date: BTreeMap<NaiveDate, f64> = BTreeMap::new();
     for product in products{
-        if product.total_profit > max_profit{
-            max_profit_parent_id = product.parent_id;
-            max_profit = product.total_profit;
-            max_profit_item_type = product.item_type;
-        }
+        best_max_profit.push(
+            MaxProfit{
+                item_type: product.item_type,
+                parent_id: product.parent_id,
+                profit: product.total_profit as i64
+            }
+        )
     }
 
-
+    best_max_profit.sort_by(|a, b| b.profit.cmp(&a.profit));
 
     // convert the below query to rust sea-orm
     // SELECT date, SUM(profit) FROM statistics.profits WHERE business_id = ? AND date >= ? AND date <= ? GROUP BY date, business_id ALLOW FILTERING
@@ -182,37 +210,7 @@ pub async fn full(
         *profit_by_date.entry(profit.date).or_insert(0f64) += profit.profit;
     }
 
-    let best_quantity = match max_quantity_parent_id{
-        0 => BestQuantity{
-            title: "No items yet".to_string(),
-            main_image: Some("default.png".to_string()),
-            overall_quantity: 0
-        },
-        _ => match get_parent_by_id(
-            &database,
-            max_quantity_parent_id,
-            ItemType::from_value(max_quantity_item_type)
-        ).await.unwrap().fetch_data(StatsType::Quantity, max_quantity as f64) {
-            Stats::Quantity(stats) => stats,
-            _ => panic!("Wrong stats type")
-        }
-    };
 
-    let best_profit = match max_profit_parent_id{
-        0 => BestProfit{
-            title: "No items yet".to_string(),
-            main_image: Some("default.png".to_string()),
-            overall_profit: 0f64
-        },
-        _ => match get_parent_by_id(
-            &database,
-            max_profit_parent_id,
-            ItemType::from_value(max_profit_item_type)
-        ).await.unwrap().fetch_data(StatsType::Profit, max_profit) {
-            Stats::Profit(stats) => stats,
-            _ => panic!("Wrong stats type")
-        }
-    };
     let mut prices: Vec<f64> = (0..namings.len()).map(|_| 0f64).collect();
     if has_access {
         for (date, total_profit) in profit_by_date {
@@ -228,39 +226,17 @@ pub async fn full(
         }
     }
 
-    println!("{:?}", best_quantity);
-    println!("{:?}", best_profit);
-    if has_access {
-        (
-            StatusCode::OK,
-            Json(
-                StatisticsResponse {
-                    best_quantity,
-                    best_profit,
-                    prices,
-                    namings
-                }
-            )
-        ).into_response()
-    } else {
-        (
-            StatusCode::OK,
-            Json(
-                StatisticsResponse {
-                    best_quantity: BestQuantity{
-                    title: "No items yet".to_string(),
-                    main_image: Some("default.png".to_string()),
-                    overall_quantity: 0
-                },
-                    best_profit: BestProfit{
-                    title: "No items yet".to_string(),
-                    main_image: Some("default.png".to_string()),
-                    overall_profit: 0f64
-                },
-                    prices,
-                    namings
-                }
-            )
-        ).into_response()
-    }
+
+    (
+        StatusCode::OK,
+        Json(
+            StatisticsResponse {
+                best_max_quantity: best_max_quantity[..best_max_quantity.len().min(quantity as usize)].to_vec(),
+                best_max_profit: best_max_profit[..best_max_profit.len().min(quantity as usize)].to_vec(),
+                prices,
+                namings
+            }
+        )
+    ).into_response()
+
 }

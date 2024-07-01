@@ -10,7 +10,8 @@ mod product;
 #[derive(Deserialize, Serialize)]
 pub struct Search {
     r#type: Types,
-    prev: u8
+    prev: u8,
+    quantity: i32
 }
 
 trait NaiveDateExt {
