@@ -11,7 +11,7 @@ use crate::core::auth::middleware::{Auth, CustomHeader};
 use crate::database::prelude::{Business, ProfitStatistics};
 use crate::database::{product_statistics, profit_statistics};
 use crate::routes::sell::{EnumValue, ItemType};
-use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, ParentGetter, Stats, StatsType};
+use crate::routes::utils::get_parent::{BestProfit, BestQuantity, get_parent_by_id, Parent, ParentGetter, Stats, StatsType};
 use crate::routes::statistics::{get_date_range, Search, Types};
 use crate::database::prelude::ProductStatistics;
 use sea_orm::QueryFilter;
@@ -78,14 +78,16 @@ struct PartialProfitStats {
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Serialize)]
 struct MaxQuantity{
-    item_type: i16,
+    title: String,
+    main_image: Option<String>,
     parent_id: i32,
     quantity: i64
 }
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Serialize)]
 struct MaxProfit{
-    item_type: i16,
+    title: String,
+    main_image: Option<String>,
     parent_id: i32,
     profit: i64
 }
@@ -143,11 +145,24 @@ pub async fn full(
 
     let mut best_max_quantity = vec![];
     for product in products{
+        let parent: Parent = get_parent_by_id(&database, product.parent_id, ItemType::from_value(product.item_type)).await.unwrap();
+        let (title, main_image) = match parent {
+            Parent::Product(model) => {
+                (model.title, model.main_image)
+            },
+            Parent::WeightItem(model) => {
+                (model.title, model.main_image)
+            },
+            Parent::NoCodeProduct(model) => {
+                (model.title, model.main_image)
+            }
+        };
         best_max_quantity.push(MaxQuantity {
-            item_type: product.item_type,
+            title,
+            main_image,
             parent_id: product.parent_id,
             quantity: product.quantity_sum,
-        })
+        });
     }
 
     best_max_quantity.sort_by(|a, b| b.quantity.cmp(&a.quantity));
@@ -178,9 +193,22 @@ pub async fn full(
     let mut best_max_profit = vec![];
     let mut profit_by_date: BTreeMap<NaiveDate, f64> = BTreeMap::new();
     for product in products{
+        let parent: Parent = get_parent_by_id(&database, product.parent_id, ItemType::from_value(product.item_type)).await.unwrap();
+        let (title, main_image) = match parent {
+            Parent::Product(model) => {
+                (model.title, model.main_image)
+            },
+            Parent::WeightItem(model) => {
+                (model.title, model.main_image)
+            },
+            Parent::NoCodeProduct(model) => {
+                (model.title, model.main_image)
+            }
+        };
         best_max_profit.push(
             MaxProfit{
-                item_type: product.item_type,
+                title,
+                main_image,
                 parent_id: product.parent_id,
                 profit: product.total_profit as i64
             }
