@@ -76,14 +76,14 @@ struct PartialProfitStats {
     pub profit: f64,
 }
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Serialize)]
 struct MaxQuantity{
     item_type: i16,
     parent_id: i32,
     quantity: i64
 }
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Serialize)]
 struct MaxProfit{
     item_type: i16,
     parent_id: i32,
